@@ -20,11 +20,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Project-UAV.ino" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="__vm\.Project-UAV.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Project_UAV.ino" />
   </ItemGroup>
 </Project>

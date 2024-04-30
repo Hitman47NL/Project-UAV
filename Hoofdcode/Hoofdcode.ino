@@ -34,6 +34,10 @@ int stroommeter = A1;
 
 // Gyro
 
+// Batterij monitoren
+int batcel_1 = A2;
+int batcel_2 = A3;
+int batcel_3 = A4;
 
 void setup() {
   pinMode(enA, OUTPUT);
@@ -48,6 +52,9 @@ void setup() {
   pinMode(noodstop, OUTPUT);
   pinMode(blower, OUTPUT);
   pinMode(stroommeter, INPUT);
+  pinMode(batcel_1, INPUT);
+  pinMode(batcel_2, INPUT);
+  pinMode(batcel_3, INPUT);
 
   // Noodstop activatie
   digitalWrite(noodstop, HIGH);

@@ -12,6 +12,9 @@ int lastButtonState = 0;
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
 
+int receivedX = 0;  // Variable to store the received X coordinate
+int receivedY = 0;  // Variable to store the received Y coordinate
+
 void setup() {
   pinMode(buttonPin, INPUT);
   mySerial.begin(9600);
@@ -21,19 +24,15 @@ void setup() {
 void loop() {
   int reading = digitalRead(buttonPin);
 
-  // If the button state has changed,
   if (reading != lastButtonState) {
     lastDebounceTime = millis();
   }
 
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    // If the button state has been changed:
     if (reading != buttonState) {
       buttonState = reading;
-
-      // Only send the coordinates if the new button state is HIGH
       if (buttonState == LOW) {
-        mySerial.println("0,0");  // Sending coordinates to Raspberry Pi
+        mySerial.println("0,0");  // Send coordinates to Raspberry Pi
         Serial.println("Sent coordinates: X=0, Y=0");
       }
     }
@@ -41,28 +40,23 @@ void loop() {
 
   lastButtonState = reading;
 
-  // Check if Raspberry Pi has sent back modified coordinates
   if (mySerial.available()) {
     String coordinates = mySerial.readStringUntil('\n');
-    coordinates.trim();  // Remove any whitespace or newline characters
-
+    coordinates.trim();
     if (coordinates.length() > 0) {
       Serial.print("Received modified coordinates: ");
       Serial.println(coordinates);
 
-      // Optional: Parsing the coordinates
+      // Parsing the coordinates
       int commaIndex = coordinates.indexOf(',');
       if (commaIndex != -1) {
-        String xStr = coordinates.substring(0, commaIndex);
-        String yStr = coordinates.substring(commaIndex + 1);
-        
-        int x = xStr.toInt();
-        int y = yStr.toInt();
-        
-        Serial.print("X: ");
-        Serial.print(x);
-        Serial.print(", Y: ");
-        Serial.println(y);
+        receivedX = coordinates.substring(0, commaIndex).toInt();
+        receivedY = coordinates.substring(commaIndex + 1).toInt();
+
+        Serial.print("Parsed X: ");
+        Serial.print(receivedX);
+        Serial.print(", Parsed Y: ");
+        Serial.println(receivedY);
       } else {
         Serial.println("Error: Received string is not in expected format.");
       }

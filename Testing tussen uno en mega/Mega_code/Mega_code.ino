@@ -1,21 +1,49 @@
+#include <Arduino.h>
+
+struct Coordinates {
+  int x;
+  int y;
+};
+
 void setup() {
-  Serial.begin(9600);
-  Serial3.begin(9600);
+  Serial.begin(9600);        // Start communication with the computer
+  Serial1.begin(9600);       // Start communication on Serial1 with Raspberry Pi
+
+  // Wait for a stable connection
+  delay(2000);               // Adjust based on your setup needs
+
+  // Send initial coordinates to Raspberry Pi as a string
+  sendCoordinates(0, 0);
+  Serial.println("Initial coordinates sent to Raspberry Pi as string.");
 }
 
 void loop() {
-  if (Serial3.available()) {
-    String data = Serial3.readStringUntil('\n');
-    Serial.print("Received from Uno: ");
-    Serial.println(data);
-
-    // Acknowledge and send new coordinates back
-    String response = "Received: " + data + " - Sending new coordinates: X10,Y1";
-    Serial3.println(response);
-
-    // Clear the buffer to ensure no leftovers
-    while (Serial3.available()) Serial3.read();
+  // Check if data is available from Raspberry Pi
+  if (Serial1.available()) {
+    Coordinates receivedCoords = receiveCoordinatesFromPi();  // Receive and parse coordinates
+    Serial.print("Received from Pi: X=");
+    Serial.print(receivedCoords.x);
+    Serial.print(", Y=");
+    Serial.println(receivedCoords.y);
+    // Additional processing can be done here
   }
+}
 
-  delay(2000); // Wait for 2 seconds to prevent overflow and ensure complete data transmission
+void sendCoordinates(int x, int y) {
+  // Create a string from coordinates and send it
+  String coordString = "X=" + String(x) + ",Y=" + String(y) + "\n";
+  Serial1.print(coordString);
+}
+
+Coordinates receiveCoordinatesFromPi() {
+  String data = Serial1.readStringUntil('\n');  // Read the string until a newline
+  Coordinates coords;
+  int separatorIndex = data.indexOf(',');
+  if (separatorIndex != -1) {
+    String xPart = data.substring(2, separatorIndex);  // Assumes format "X=123"
+    String yPart = data.substring(separatorIndex + 3); // Assumes format ",Y=456"
+    coords.x = xPart.toInt();  // Convert x part of string to integer
+    coords.y = yPart.toInt();  // Convert y part of string to integer
+  }
+  return coords;
 }

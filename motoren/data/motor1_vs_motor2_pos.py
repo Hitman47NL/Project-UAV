@@ -1,17 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Data voor motor 1 in het positieve scenario
+voltage_1_pos = np.array([1, 2, 3, 4, 5, 6])
+meting_1_pos = np.array([6.8, 20.41, 36.30, 54.44, 86.20, 117.95])
+
 # Data voor motor 2 in het positieve scenario
 voltage_2_pos = np.array([1, 2, 3, 4, 5, 6])
-meting_2_pos = np.array([6.80, 18.16, 36.30, 56.7, 95.26, 127.02])
-
-# Data voor motor 2 in het negatieve scenario
-voltage_2_neg = np.array([1, 2, 3, 4, 5, 6])
-meting_2_neg = np.array([6.8, 18.16, 43.1, 74.85, 122.5, 167.85])
+meting_2_pos = np.array([6.8, 18.16, 36.30, 56.70, 95.26, 127.02])
 
 # Bereken de helling van de regressielijnen voor elk scenario
+helling_1_pos = np.polyfit(voltage_1_pos, meting_1_pos, 1)[0]
 helling_2_pos = np.polyfit(voltage_2_pos, meting_2_pos, 1)[0]
-helling_2_neg = np.polyfit(voltage_2_neg, meting_2_neg, 1)[0]
 
 # Maak de plots
 plt.figure(figsize=(8, 6))
@@ -19,13 +19,12 @@ plt.figure(figsize=(8, 6))
 plt.scatter(voltage_2_pos, meting_2_pos, color='blue', label='Motor 2 (+)')
 plt.plot(voltage_2_pos, np.polyval(np.polyfit(voltage_2_pos, meting_2_pos, 1), voltage_2_pos), color='blue', linestyle='--', label=f'Regressielijn (+): helling={helling_2_pos:.2f}')
 
-plt.scatter(voltage_2_neg, meting_2_neg, color='red', label='Motor 2 (-)')
-plt.plot(voltage_2_neg, np.polyval(np.polyfit(voltage_2_neg, meting_2_neg, 1), voltage_2_neg), color='red', linestyle='--', label=f'Regressielijn (-): helling={helling_2_neg:.2f}')
+plt.scatter(voltage_1_pos, meting_1_pos, color='red', label='Motor 1 (+)')
+plt.plot(voltage_1_pos, np.polyval(np.polyfit(voltage_1_pos, meting_1_pos, 1), voltage_1_pos), color='red', linestyle='--', label=f'Regressielijn (+): helling={helling_1_pos:.2f}')
 
 plt.xlabel('Voltage (V)')
 plt.ylabel('Meting (g)')
-plt.title('Metingen van Motor 2')
+plt.title('Motor 1 vs Motor 2 (+)')
 plt.legend()
 
 plt.grid(True)
-

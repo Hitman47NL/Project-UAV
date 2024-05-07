@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 
 # Data voor motor 2 in het positieve scenario
 voltage_2_pos = np.array([1, 2, 3])
-meting_2_pos = np.array([11, 32, 51])
+meting_2_pos = np.array([24.95, 72.58, 115.68])
 
 # Data voor motor 2 in het negatieve scenario
-voltage_2_neg = np.array([-1, -2, -3])
-meting_2_neg = np.array([-13, -41, -63])
+voltage_2_neg = np.array([1, 2, 3])
+meting_2_neg = np.array([29.49, 92.99, 142.89])
 
 # Bereken de helling van de regressielijnen voor elk scenario
 helling_2_pos = np.polyfit(voltage_2_pos, meting_2_pos, 1)[0]
@@ -28,4 +28,4 @@ plt.title('Metingen van kleine motor')
 plt.legend()
 
 plt.grid(True)
-plt.show()
+

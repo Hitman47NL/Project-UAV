@@ -6,3 +6,6 @@ import matplotlib.pyplot as plt
 import data.kleine_motor
 import data.motor1
 import data.motor2
+import data.motor1_vs_motor2_neg
+import data.motor1_vs_motor2_pos
+plt.show()

@@ -9,18 +9,11 @@ meting_2_pos = np.array([24.95, 72.58, 115.68])
 voltage_2_neg = np.array([1, 2, 3])
 meting_2_neg = np.array([29.49, 92.99, 142.89])
 
-# Bereken de helling van de regressielijnen voor elk scenario
-helling_2_pos = np.polyfit(voltage_2_pos, meting_2_pos, 1)[0]
-helling_2_neg = np.polyfit(voltage_2_neg, meting_2_neg, 1)[0]
-
 # Maak de plots
 plt.figure(figsize=(8, 6))
 
-plt.scatter(voltage_2_pos, meting_2_pos, color='blue', label='Motor 2 (+)')
-plt.plot(voltage_2_pos, np.polyval(np.polyfit(voltage_2_pos, meting_2_pos, 1), voltage_2_pos), color='blue', linestyle='--', label=f'Regressielijn (+): helling={helling_2_pos:.2f}')
-
-plt.scatter(voltage_2_neg, meting_2_neg, color='red', label='Motor 2 (-)')
-plt.plot(voltage_2_neg, np.polyval(np.polyfit(voltage_2_neg, meting_2_neg, 1), voltage_2_neg), color='red', linestyle='--', label=f'Regressielijn (-): helling={helling_2_neg:.2f}')
+plt.plot(voltage_2_pos, meting_2_pos, color='blue', label='Motor 2 (+)')
+plt.plot(voltage_2_neg, meting_2_neg, color='red', label='Motor 2 (-)')
 
 plt.xlabel('Voltage (V)')
 plt.ylabel('Meting (g)')

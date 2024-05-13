@@ -16,7 +16,7 @@ plt.plot(voltage_2_neg, meting_2_neg, color='blue', label='Motor 2 (-)')
 plt.plot(voltage_1_neg, meting_1_neg, color='red', label='Motor 1 (-)')
 
 plt.xlabel('Voltage (V)')
-plt.ylabel('Meting (g)')
+plt.ylabel('Kracht (N)')
 plt.title('Motor 1 vs Motor 2 (-)')
 plt.legend()
 

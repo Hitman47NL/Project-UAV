@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Data voor motor 1 in het positieve scenario
+# Data voor propellor 6 bladed in het positieve scenario
 voltage_1_pos = np.array([1, 2, 3, 4, 5, 6])
-meting_1_pos = np.array([6.8, 20.41, 36.30, 54.44, 86.20, 117.95])
+meting_1_pos = np.array([15.88, 65.78, 90.73, 154.24, 224.55, 229.09])
 
-# Data voor motor 2 in het positieve scenario
+# Data voor propellor 6 bladed in het positieve scenario
 voltage_2_pos = np.array([1, 2, 3, 4, 5, 6])
-meting_2_pos = np.array([6.8, 18.16, 36.30, 56.70, 95.26, 127.02])
+meting_2_pos = np.array([15.88, 52.17, 104.34, 156.51, 204.14, 201.87])
 
 # Maak de plots
 plt.figure(figsize=(8, 6))
@@ -18,7 +18,7 @@ plt.plot(voltage_1_pos, meting_1_pos, color='red', label='Motor 1 (+)')
 
 plt.xlabel('Voltage (V)')
 plt.ylabel('Kracht (N)')
-plt.title('Motor 1 vs Motor 2 (+)')
+plt.title('Motor 1, 6 bladed propellor')
 plt.legend()
 
 plt.grid(True)

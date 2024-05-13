@@ -36,5 +36,6 @@ axs[2].set_title('Kleine Motor')
 axs[2].grid(True)
 axs[2].legend()
 
+fig.suptitle('Vergelijking tussen de motoren [1.1A, 6V, standaard propellor]')
 # Adjust layout
 plt.tight_layout()

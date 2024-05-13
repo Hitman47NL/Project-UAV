@@ -2,21 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Data voor propellor 6 bladed in het positieve scenario
-voltage_1_pos = np.array([1, 2, 3, 4, 5, 6])
-meting_1_pos = np.array([15.88, 65.78, 90.73, 154.24, 224.55, 229.09])
+PWM_pos_prop6 = np.array([51, 102, 153, 204, 255])
+meting_pos_prop6 = np.array([])
 
-# Data voor propellor 6 bladed in het positieve scenario
-voltage_2_pos = np.array([1, 2, 3, 4, 5, 6])
-meting_2_pos = np.array([15.88, 52.17, 104.34, 156.51, 204.14, 201.87])
+# Data voor propellor 6 bladed in het negatieve scenario
+PWM_neg_prop6 = np.array([51, 102, 153, 204, 255])
+meting_neg_prop6 = np.array([])
 
 # Maak de plots
 plt.figure(figsize=(8, 6))
 
-plt.plot(voltage_2_pos, meting_2_pos, color='blue',marker = 'o', label='Motor 2 (+)')
-plt.plot(voltage_1_pos, meting_1_pos, color='red',marker = 'o', label='Motor 1 (+)')
+plt.plot(PWM_pos_prop6, meting_pos_prop6, color='blue',marker = 'o', label='Motor 2 (+)')
+plt.plot(PWM_neg_prop6, meting_neg_prop6, color='red',marker = 'o', label='Motor 1 (+)')
 
 
-plt.xlabel('Voltage (V)')
+plt.xlabel('PWM')
 plt.ylabel('Kracht (N)')
 plt.title('Motor 1, 6 bladed propellor')
 plt.legend()

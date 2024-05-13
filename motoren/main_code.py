@@ -11,4 +11,7 @@ import data.motor1_vs_motor2_pos
 import data.propellor_2blad
 import data.propellor_3blad
 import data.propellor_6blad
+import data.propellor_vs_propellor_neg
+import data.propellor_vs_propellor_pos
+
 plt.show()

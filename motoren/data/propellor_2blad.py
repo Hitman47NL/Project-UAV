@@ -12,8 +12,8 @@ meting_2_pos = np.array([6.8, 40.83, 81.66, 136.09, 190.53, 249.50])
 # Maak de plots
 plt.figure(figsize=(8, 6))
 
-plt.plot(voltage_2_pos, meting_2_pos, color='blue', label='Motor 2 (+)')
-plt.plot(voltage_1_pos, meting_1_pos, color='red', label='Motor 1 (+)')
+plt.plot(voltage_2_pos, meting_2_pos, color='blue',marker = 'o', label='Motor 2 (+)')
+plt.plot(voltage_1_pos, meting_1_pos, color='red',marker = 'o', label='Motor 1 (+)')
 
 
 plt.xlabel('Voltage (V)')

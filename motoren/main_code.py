@@ -8,4 +8,7 @@ import data.motor1
 import data.motor2
 import data.motor1_vs_motor2_neg
 import data.motor1_vs_motor2_pos
+import data.propellor_2blad
+import data.propellor_3blad
+import data.propellor_6blad
 plt.show()

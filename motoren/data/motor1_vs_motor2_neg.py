@@ -12,8 +12,8 @@ meting_2_neg = np.array([6.8, 18.16, 43.1, 74.85, 122.50, 167.85])
 # Maak de plots
 plt.figure(figsize=(8, 6))
 
-plt.plot(voltage_2_neg, meting_2_neg, color='blue', label='Motor 2 (-)')
-plt.plot(voltage_1_neg, meting_1_neg, color='red', label='Motor 1 (-)')
+plt.plot(voltage_2_neg, meting_2_neg, color='blue',marker = 'o', label='Motor 2 (-)')
+plt.plot(voltage_1_neg, meting_1_neg, color='red',marker = 'o', label='Motor 1 (-)')
 
 plt.xlabel('Voltage (V)')
 plt.ylabel('Kracht (N)')

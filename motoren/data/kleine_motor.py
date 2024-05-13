@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Data voor motor 2 in het positieve scenario
-voltage_klein_pos = np.array([1, 2, 3])
-meting_klein_pos = np.array([20.41, 63.51, 90.73])
+PWM_klein_pos = np.array([51, 102, 153, 204, 255])
+meting_klein_pos = np.array([34.02, 54.44, 81.66, 99.80, 106.61])
 
 # Data voor motor 2 in het negatieve scenario
-voltage_klein_neg = np.array([1, 2, 3])
-meting_klein_neg = np.array([29.49, 99.80, 136.09])
+PWM_klein_neg = np.array([51, 102, 153, 204, 255])
+meting_klein_neg = np.array([4.54, 83.92, 129.29, 147.43, 158.78])

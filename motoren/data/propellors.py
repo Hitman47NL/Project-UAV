@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 
 # Data neg
 categories1 = ['standaard', '2-bladed', '3-bladed', '6-bladed']
-values1 = []
+values1 = [165.58, 215.48, 244.97, 267.65 ]
 
 # Data pos
 categories2 = ['standaard', '2-bladed', '3-bladed', '6-bladed']
-values2 = []
+values2 = [102.07, 185.99, 204.14, 238.16]
 
 # Create subplots
 fig, axs = plt.subplots(1, 2, figsize=(8, 10))  # 2 rows, 1 column
@@ -27,7 +27,7 @@ for bar in bars1:
 bars2 = axs[1].bar(categories2, values2, color='salmon')
 axs[1].set_title('Max kracht propellors [+]')
 axs[1].set_xlabel('Propellors')
-axs[1].set_ylabel('Values')
+axs[1].set_ylabel('Kracht [N]')
 
 # Annotate each bar with its value in the second subplot
 for bar in bars2:

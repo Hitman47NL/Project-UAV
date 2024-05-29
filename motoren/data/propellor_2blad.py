@@ -17,7 +17,7 @@ plt.plot(PWM_neg_prop2, meting_neg_prop2, color='red',marker = 'o', label='Motor
 
 
 plt.xlabel('PWM')
-plt.ylabel('Kracht (N)')
+plt.ylabel('Kracht (mN)')
 plt.title('Motor 1, 2 bladed propellor')
 plt.legend()
 

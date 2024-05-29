@@ -16,7 +16,7 @@ plt.plot(PWM_2_neg, meting_2_neg, color='blue',marker = 'o', label='Motor 2 (-)'
 plt.plot(PWM_1_neg, meting_1_neg, color='red',marker = 'o', label='Motor 1 (-)')
 
 plt.xlabel('PWM')
-plt.ylabel('Kracht (N)')
+plt.ylabel('Kracht (mN)')
 plt.title('Motor 1 vs Motor 2 (-)')
 plt.legend()
 

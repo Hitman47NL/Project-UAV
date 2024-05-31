@@ -1,173 +1,163 @@
-# -*- coding: utf-8 -*-
-"""
-Simulatie van plaats s en snelheid v van een massa m en een stuwkracht Fx.
+/*
+    Simulatie van plaats s en snelheid v van een massa m en een stuwkracht F
+    Bewegingsvergelijking:
+       m.a = F
 
-Bewegingsvergelijking:
-    Fx = m * a
+    Integratie obv
+       a = dv/dt
+       v = ds/dt
 
-Gemaakt op 25-05-2024
+    => dv = a.dt => v_nw - v_oud = a.dt => v_nw = v_oud + a.dt =>
+       v = v + a*dt
+       s = s + v*dt
 
-Auteurs: Ernst Kouwe en Mark Schelbergen
-"""
+  setup
+    meet t0
+    of simulatie: gebruik beginwaarden van s en v
+    of realisatie: meet s
+    bereken error
+    error_oud = error
+    bereken F, a mbv regelaar
+    of sim: plot F, s, v, a
+    of rea: stuur motoren aan
+  loop
+    meet t totdat tijd voor nieuwe regelstap is aangebroken (om de 10 ms)
+      of sim: bereken s en v
+      of rea: meet s
+      error_oud = error
+      bereken error
+      bereken F, a mbv regelaar
+      of sim: plot F, s, v, a
+      of rea: stuur motoren aan
 
-import numpy as np
-import matplotlib.pyplot as plt
+  Poolplaatsing s-domein
+  Im(pool) = 2 x Re(pool) geeft Doorschot van 20%. Goed meetbaar!
+  Im(pool) = Re(pool) geeft Doorschot van 4%. Niet goed meetbaar!
 
-# Systeem parameters
-m = 0.8  # Massa van de UAV in [kg]
-Fx_max = 5  # Maximale stuwkracht propeller voor meer realistische simulatie [N]
-Fx_min = -Fx_max  # Minimale stuwkracht propeller voor meer realistische simulatie [N]
+*/
+const bool simulatie = true;
 
-# Simulatie configuratie
-t_eind = 10  # Lengte van simulatie in [s]
-dt = .01  # Stapgrootte voor de simulatie in [s]
-tijden = np.arange(0, t_eind, dt)  # Array met tijdstappen
+const int pwmPenL = 5;  // Pen Motor links  Mega: pen 4  980 Hz
+const int pwmPenR = 6;  // Pen Motor rechts Mega: pen 13 980 Hz
+const int pwmPenM = 3;  // Pen Motor midden Mega: pen 3  490 Hz
 
-s0 = 0  # Beginafstand in [m]
-v0 = 0  # Beginsnelheid in [m/s]
+const long cyclustijd = 10;                 // ms;       Regelaar wordt 100x per seconde ververst.
+long t_oud, t_nw;                           // ms, ms;
+float dt = 1;                               // s;        Nodig vanwege d_error / dt in de regelaar
+const float m = 0.8;                        // kg;       Massa van de UAV
+const float Iz = 0.008;                     // kgm2;     Massatraagheid van de UAV
+float Fx, Fy, Mz = 0.01;                    // N, N, Nm; Stuurkrachten en stuurmoment
+const float Mstoor = 0.01;                  // Nm;       Stoormoment door helicoptereffect van de blowers
+const float Fmin = -5, Fmax = 5;            // Maximering van stuwkracht voor meer realistische simulatie
+float ax, ay, alfa;                         // m/s2;     Versnellingen en hoekversnelling
+float vx = 0.0, sx = 0.0;                   // m/s, m;   Beginwaarden tbv simulatie
+float vy = 0.0, sy = 0.0;                   // m/s, m;   Beginwaarden tbv simulatie
+float omega = 0.0, theta = 0.0;             // m/s, m;   Beginwaarden tbv simulatie
+float Kp = .01, Kd = .01, Ki = 1;           // regelaarparameters PID-regelaar
+float error, error_oud, d_error, errorSom;  // De errors voor een PID-regelaar
+const float sp = 1.0;                       // rad;      Setpoint, nodig om sprongresponsie van 0 naar 1 te simuleren
 
-sp = 1  # Setpoint voor afstand in [m]
+// Zorg dat de plot op Ã©Ã©n pagina past
+const long simulatietijd_in_s = long(10);                    // s; De simulatietijd is instelbaar
+const long simulatietijd = simulatietijd_in_s * long(1000);  // ms
+const int pixels = 499;                                      // aantal weer te geven punten in de Serial plotter
+int pixel = 0;                                               // teller van het aantal reeds weergegeven punten
+const float tijdPerPixel = simulatietijd / pixels;
+double tijdVoorNwePixelPlot;
 
+void gyro() {  // Gyro meet de hoeksnelheid en berekent theta
+}
 
-def pid_regelaar(x, error_oud, error_som, gains):
-    """
-    Berekent de output van een PID-regelaar.
+int pwm_links() {
+  const int aL = 300, bL = 100;
+  analogWrite(pwmPenL, constrain(aL * Fx / 2 + bL, 0, 0));
+}
+int pwm_rechts() {
+  const int aR = 302, bR = 105;
+  analogWrite(pwmPenR, constrain(aR * Fx / 2 + bR, 0, 0));
+}
+int pwm_midden() {
+  const int aM = 302, bM = 105;
+  analogWrite(pwmPenM, constrain(aM * Fy + bM, 0, 0));
+}
+void motoraansturing() {
+  pwm_links();  // Bereken en schrijf alle uitgangen
+  pwm_rechts();
+  pwm_midden();
+}
 
-    Parameters:
-        x (float): Geregelde grootheid.
-        error_oud (float): De fout van de vorige tijdstap.
-        error_som (float): De som van de fouten tot nu toe.
-        gains (tuple): Een tuple bestaande uit drie gains (Kp, Ki, Kd) voor de PID-regelaar.
+void plot() {
+  tijdVoorNwePixelPlot = tijdVoorNwePixelPlot + tijdPerPixel;
+  Serial.print(Mz * 1);
+  Serial.print(" ");
+  Serial.print(alfa * 1);
+  Serial.print(" ");
+  Serial.print(omega * 1);
+  Serial.print(" ");
+  Serial.println(theta * 1);
+  pixel = pixel + 1;
+}
 
-    Returns:
-        tuple:
-            - regelaar_output (float): De berekende regelaar actie.
-            - error (float): De huidige fout.
-            - error_som (float): De bijgewerkte som van de fouten.
-    """
-    Kp, Kd, Ki = gains
+void Poolplaatsing() {
+  const float Re = 1, Im = 2, pool3 = 2;  // Poolplaatsing Im(pool) = 2 x Re(pool): Doorschot = 20%
+                                          // Berekening PD-parameters adhv de poolplaatsing
+                                          //  Kp = (Re * Re + Im * Im) * Iz;
+                                          //  Kd = 2 * Re * Iz;
 
-    error = sp - x  # Ingestelde waarde - geregelde grootheid
-    d_error = error - error_oud
-    error_som = error_som + error * dt
-    regelaar_output = Kp * error# + Kd * d_error / dt + Ki * error_som
-    return regelaar_output, error, error_som
+  // Berekening PID-parameters adhv de poolplaatsing
+  Kp = (Re * Re + Im * Im + 2 * Re * pool3) * Iz;
+  Kd = (2 * Re + pool3) * Iz;
+  Ki = (Re * Re + Im * Im) * pool3 * Iz;
+}
 
+void Regelaar() {
+  error_oud = error;
+  error = sp - theta;
+  d_error = error - error_oud;
+  errorSom = errorSom + error * dt;
+  ;  //Mz = Kp * error + Kd * d_error / dt + Ki * errorSom
+  //constrain(Fx, Fmin, Fmax);
+  alfa = (Mz + Mstoor) / Iz;  // bereken de hoekversnelling
+}
 
-def run_simulatie(gains):
-    """
-    Voert een simulatie uit met een PID-regelaar welke de kracht berekenent die nodig is
-    om een systeem naar een gewenst punt te brengen.
+void setup() {
+  if (simulatie) {
+    Serial.begin(57600);
+    Serial.print("Mz alfa omega theta");  // De legenda
+    if (tijdPerPixel < cyclustijd) Serial.println("___XXXXXX____tijdPerPixel.<.cyclustijd____XXXXXX");
+    else Serial.println();
+  }
+  t_oud = millis();
+  if (simulatie) tijdVoorNwePixelPlot = t_oud;
+  if (not simulatie) gyro();
+  error = sp - theta;
+  Poolplaatsing();
+  Regelaar();
+  if (simulatie) plot();
+  else motoraansturing();
+}
 
-    Parameters:
-    gains (tuple): Een tuple bestaande uit drie gains (Kp, Ki, Kd) voor de PID-regelaar.
+void loop() {
+  t_nw = millis();  // Lees de tijd
+  if (t_nw - t_oud > cyclustijd) {
+    dt = (t_nw - t_oud) * .001;
+    t_oud = t_nw;
 
-    Returns:
-    tuple:
-        - plaatsen (list): Een lijst met de positie van het systeem op elk tijdstip.
-        - snelheden (list): Een lijst met de snelheid van het systeem op elk tijdstip.
-        - versnellingen (list): Een lijst met de versnelling van het systeem op elk tijdstip.
-        - krachten (list): Een lijst met de kracht die op het systeem wordt uitgeoefend op elk tijdstip.
+    if (simulatie) {
+      theta = theta + omega * dt;  // Bereken theta (gebruik omega_oud)
+      omega = omega + alfa * dt;   // Bereken omega
+    } else {
+      gyro();  // Gyro meet hoeksnelheid en berekent theta
+    }
+    Regelaar();
 
-    De functie simuleert de beweging van een systeem over een reeks tijdstippen.
-    Het gebruikt een PID-regelaar om de gewenste kracht te berekenen om het systeem naar
-    een gewenst punt te sturen. De kracht wordt vervolgens beperkt tot realistische waarden
-    en wordt gebruikt om de versnelling, snelheid en positie van het systeem bij elk tijdstip te berekenen.
-    """
-
-    # Variabelen om resultaten weg te schrijven
-    error_oud = 0
-    error_som = 0
-    plaatsen = [s0]
-    snelheden = [v0]
-    versnellingen = []
-    krachten = []
-
-    for ti in tijden:
-        s_oud = plaatsen[-1]
-        v_oud = snelheden[-1]
-
-        # Bereken de gewenste kracht met de PID regelaar
-        Fx, error_oud, error_som = pid_regelaar(s_oud, error_oud, error_som, gains)
-
-        # Begrens de kracht naar realistische waarde
-        if Fx > Fx_max:
-            Fx = Fx_max
-        elif Fx < Fx_min:
-            Fx = Fx_min
-        krachten.append(Fx)  # Wegschrijven kracht
-
-        # Bereken bijbehorende versnelling
-        a = Fx / m
-        versnellingen.append(a)
-
-        # Integreren van versnelling om snelheid en plaats te berekenen
-        v = v_oud + a * dt
-        snelheden.append(v)
-        s = s_oud + v_oud * dt
-        plaatsen.append(s)
-
-    return plaatsen, snelheden, versnellingen, krachten
-
-
-def plot_resultaten(plaatsen, snelheden, versnellingen, krachten, gains, linestyle='-', ax=None):
-    """
-    Maakt een plot van de resultaten van een simulatie.
-
-    Parameters:
-    plaatsen (list): Een lijst met de positie van het systeem op elk tijdstip.
-    snelheden (list): Een lijst met de snelheid van het systeem op elk tijdstip.
-    versnellingen (list): Een lijst met de versnelling van het systeem op elk tijdstip.
-    krachten (list): Een lijst met de kracht die op het systeem wordt uitgeoefend op elk tijdstip.
-    gains (tuple): Een tuple bestaande uit drie gains (Kp, Ki, Kd) voor de PID-regelaar.
-    linestyle (str, optioneel): De stijl van de lijnen in de plot, standaard is '-' (doorgetrokken lijn).
-    ax (matplotlib Axes, optioneel): Een Axes-object om op te plotten. Bij None, wordt er een nieuwe figuur aangemaakt.
-
-    Returns:
-    ax (matplotlib Axes): De Axes-objecten met de gemaakte plot.
-
-    De functie maakt een figuur met vier subplots (kracht, versnelling, snelheid en plaats)
-    van de simulatiegegevens. Als er geen Axes-object wordt meegegeven, maakt de functie
-    een nieuwe figuur en Axes-objecten aan. De grafieken worden geplot met de tijd als
-    de x-as en de bijbehorende data (kracht, versnelling, snelheid en plaats) op de y-as.
-    """
-    if ax is None:
-        fig, ax = plt.subplots(4, 1, sharex=True, figsize=[4.8, 6.4])
-        plt.subplots_adjust(top=0.97, bottom=0.08, left=0.15, right=0.97)
-        for a in ax: a.grid()
-        ax[0].set_ylabel('Kracht [N]')
-        ax[1].set_ylabel('Versnelling [m/s$^2$]')
-        ax[2].set_ylabel('Snelheid [m/s]')
-        ax[3].set_ylabel('Plaats [m]')
-        ax[-1].set_xlabel('Tijd [s]')
-        ax[-1].set_xlim([tijden[0] - .1, tijden[-1] + .1])
-    lbl = f"K$_p$={gains[0]:.1f};K$_d$={gains[1]:.1f};K$_i$={gains[2]:.1f}"
-    ax[0].plot(tijden, krachten, linestyle, label=lbl)
-    ax[0].legend()
-    ax[1].plot(tijden, versnellingen, linestyle)
-    ax[2].plot(tijden, snelheden[:-1], linestyle)
-    ax[3].plot(tijden, plaatsen[:-1], linestyle)
-    return ax
-
-
-if __name__ == '__main__':
-    # Controller parameters via poolplaatsing voor PD-regelaar    
-    Re = 1
-    Im = 2
-    Kp = (Re * Re + Im * Im) * m
-    Kd = 2 * Re * m
-    Kp = 1  # Proportionele gain
-    Kd = 1  # DifferentiÃ«le gain
-    Ki = 0  # Integrale gain
-    gains_set1 = (Kp, Kd, Ki)
-
-    plaatsen1, snelheden1, versnellingen1, krachten1 = run_simulatie(gains_set1)
-    ax = plot_resultaten(plaatsen1, snelheden1, versnellingen1, krachten1, gains_set1)
-
-    Ki = .2  # Integrale gain
-    gains_set2 = (Kp, Kd, Ki)
-
-    plaatsen2, snelheden2, versnellingen2, krachten2 = run_simulatie(gains_set2)
-    plot_resultaten(plaatsen2, snelheden2, versnellingen2, krachten2, gains_set2, '--', ax)
-
-    plt.show()
+    if (simulatie) {
+      if (pixel == pixels)
+        while (true)
+          ;                                     // Vanglus. Stop met plotten als scherm vol is
+      if (t_nw > tijdVoorNwePixelPlot) plot();  // Alleen plotten als tijdPerPixel is verlopen
+    } else {
+      motoraansturing();
+    }
+  }
+}

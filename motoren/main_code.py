@@ -8,4 +8,6 @@ import matplotlib.pyplot as plt
 #import data.motor1_vs_motor2_neg #vergelijking van de negatieve scenario's van motor 1 en motor 2
 #import data.motor1_vs_motor2_pos #vergelijking van de positieve scenario's van motor 1 en motor 2
 import data.motor1_motor2_3blad_motorklein
+import data.motor1_vs_motor2_3blade_neg
+import data.motor1_vs_motor2_3blade_pos
 plt.show()

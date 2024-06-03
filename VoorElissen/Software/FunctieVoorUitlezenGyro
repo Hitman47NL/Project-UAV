@@ -1,0 +1,9 @@
+//Functie voor waardes uit gyro the halen.
+void readGyro() {
+  xyzFloat gValue = myMPU9250.getGValues();
+  xyzFloat gyr = myMPU9250.getGyrValues();
+  xyzFloat magValue = myMPU9250.getMagValues();
+  xyzFloat gAngle = myMPU9250.getAngles();
+  float temp = myMPU9250.getTemperature();
+  float resultantG = myMPU9250.getResultantG(gValue);
+}

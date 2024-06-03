@@ -1,0 +1,54 @@
+#include <Wire.h>
+#include <Adafruit_VL53L0X.h>
+
+
+#define SHT_TOF1_PIN 34
+#define SHT_TOF2_PIN 36
+#define SHT_TOF3_PIN 38
+
+//Define adressen voor i2c
+#define TOF1_ADDR 0x30
+#define TOF2_ADDR 0x31
+#define TOF3_ADDR 0x32
+
+// Functie voor het instellen van de adressen van de TOF sensoren. Code kan worden uitgebreid om acties te ondernemen bij het niet opstarten van de TOF senosren
+void initTOFsensors() {
+  //Zet alle pinnen laag
+  digitalWrite(SHT_TOF1_PIN, LOW);
+  digitalWrite(SHT_TOF2_PIN, LOW);
+  digitalWrite(SHT_TOF3_PIN, LOW);
+  delay(10);  // Stabiiteit
+  //Zet alle pinnen hoog
+  digitalWrite(SHT_TOF1_PIN, HIGH);
+  digitalWrite(SHT_TOF2_PIN, HIGH);
+  digitalWrite(SHT_TOF3_PIN, HIGH);
+  delay(10);  // Stabiliteit
+  //Zet de pin van TOF1 hoog om adres te schrijven.
+  digitalWrite(SHT_TOF1_PIN, HIGH);
+  digitalWrite(SHT_TOF2_PIN, LOW);
+  digitalWrite(SHT_TOF3_PIN, LOW);
+
+  //Schrijf het adres naar TOF1
+  if (!tof1.begin(TOF1_ADDR)) {
+    Serial.println(F("Failed to boot first VL53L0X"));  //Foutmelding
+    //Eventuele mogelijkheid om fout code uit te breiden
+  }
+  delay(10);  // Stabiliteit
+
+  //Zet pin van TOF2 hoog om adres te schrijven
+  digitalWrite(SHT_TOF2_PIN, HIGH);
+  //Schrijf het adres naar TOF2
+  if (!tof2.begin(TOF2_ADDR)) {
+    Serial.println(F("Failed to boot second VL53L0X"));
+    //Eventuele mogelijkheid om fout code uit te breiden
+  }
+  delay(10);  // Stabiliteit
+
+  //Zet pin van TOF23 hoog om adres te schrijven
+  digitalWrite(SHT_TOF3_PIN, HIGH);
+  //Schrijf het adres naar TOF3
+  if (!tof3.begin(TOF3_ADDR)) {
+    Serial.println(F("Failed to boot third VL53L0X"));
+    //Eventuele mogelijkheid om fout code uit te breiden
+  }
+}

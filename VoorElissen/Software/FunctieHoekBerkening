@@ -1,0 +1,31 @@
+
+// Deze functie berekend de hoek op basis van de verste TOF sensor. De richting van de hoek wordt aangegeven door positief of negatief
+float calculateAngle() {
+  //Maakt van mm -> cm
+  float TOFsensor1M = measure1.RangeMilliMeter / 10.0;
+  float TOFsensor2M = measure2.RangeMilliMeter / 10.0;
+
+  // Bepaald welke sensor verderweg staat
+  if (TOFsensor1 > TOFsensor2) {
+    //Berekeningen
+    float radAngle = (TOFsensor2M - TOFsensor1M) / 25.0;  // Berekend het verschil en deelt dit door de onderlinge afstand van de TOF sensoren
+    float degAngle = radAngle * (180.0 / 3.14);           // Convert to degrees
+    Serial.println(TOFsensor1M);
+    Serial.println(TOFsensor2M);
+    Serial.println(degAngle);  //Printen in terminal
+    lcd.setCursor(5, 0);       //Waar de lcd print 1ste rij 6de kolom
+    lcd.print(degAngle);       //Print de hoek in graden
+    return degAngle;           //Geeft de hoek in graden terug om te gebruiken voor de regelaar
+
+  } else {
+    //Berekeningen
+    float radAngle = (TOFsensor1M - TOFsensor2M) / 25.0;  // Berekend het verschil en deelt dit door de onderlinge afstand van de TOF sensoren
+    float degAngle = radAngle * (180.0 / 3.14);           // Convert to degrees
+    Serial.println(TOFsensor1M);
+    Serial.println(TOFsensor2M);
+    Serial.println(-degAngle);  //Printen in terminal
+    lcd.setCursor(5, 0);        //Waar de lcd print 1ste rij 6de kolom
+    lcd.print(-degAngle);       //Print de negatieve hoek in graden
+    return -degAngle;           //Geeft de negatieve hoek in graden terug om te gebruiken voor de regelaar
+  }
+}

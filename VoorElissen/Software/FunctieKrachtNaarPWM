@@ -1,0 +1,11 @@
+//Functie voor de regelaars
+int krachtToPWM(float kracht) {
+  // Aangenomen dat de krachtwaarde tussen 0 en 1 ligt.
+  // Pas dit bereik aan indien nodig.
+  if (kracht < 0) kracht = 0;
+  if (kracht > 1) kracht = 1;
+
+  // Lineaire mapping van kracht (0-1) naar PWM (0-255)
+  int pwm = (int)(kracht * (MAX_PWM - MIN_PWM) + MIN_PWM);
+  return pwm;
+}

@@ -1,1 +1,38 @@
+#include <Wire.h>
+#include <MPU9250_WE.h>
 
+#define MPU9250_ADDR 0x68
+MPU9250_WE myMPU9250 = MPU9250_WE(MPU9250_ADDR);
+
+// Functie voor het instellen voor de Gyroscoop,
+void initGyroSensor() {
+  //Check of de gyro is verbonden
+  if (!myMPU9250.init()) {
+    Serial.println("MPU9250 does not respond");
+    //Mogelijkheid tot uitbreiden voor niet werkende gyro
+  } else {
+    Serial.println("MPU9250 is connected");
+  }
+  //Check of de magneetmeter werkt
+  if (!myMPU9250.initMagnetometer()) {
+    Serial.println("Magnetometer does not respond");
+    //Mogelijkheid tot uitbreiden voor niet werkende magneetmeter
+  } else {
+    Serial.println("Magnetometer is connected");
+  }
+
+  Serial.println("Position you MPU9250 flat and don't move it - calibrating...");
+  delay(100);
+  myMPU9250.autoOffsets();
+  myMPU9250.setAccOffsets(-14240.0, 18220.0, -17280.0, 15590.0, -20930.0, 12080.0);
+  myMPU9250.setGyrOffsets(45.0, 145.0, -105.0);
+  myMPU9250.enableGyrDLPF();
+  myMPU9250.setGyrDLPF(MPU9250_DLPF_6);
+  myMPU9250.setSampleRateDivider(5);
+  myMPU9250.setGyrRange(MPU9250_GYRO_RANGE_250);
+  myMPU9250.setAccRange(MPU9250_ACC_RANGE_2G);
+  myMPU9250.enableAccDLPF(true);
+  myMPU9250.setAccDLPF(MPU9250_DLPF_6);
+  myMPU9250.setMagOpMode(AK8963_CONT_MODE_100HZ);
+  delay(100);
+}

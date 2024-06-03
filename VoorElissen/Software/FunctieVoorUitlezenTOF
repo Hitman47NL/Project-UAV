@@ -1,0 +1,9 @@
+void readDualSensors() {
+  tof1.rangingTest(&measure1, false);
+  tof2.rangingTest(&measure2, false);
+  tof3.rangingTest(&measure3, false);
+  //Decleratie van de variable DMV functie. Alle afstanden zijn in mm
+  TOFsensor1 = measure1.RangeMilliMeter;  //Sensor 1 afstand in mm
+  TOFsensor2 = measure2.RangeMilliMeter;  //Sensor 2 afstand in mm
+  TOFsensor3 = measure3.RangeMilliMeter;  //Sensor 3 afstand in mm
+}

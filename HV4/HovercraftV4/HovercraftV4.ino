@@ -57,7 +57,7 @@ void Regelaar_Iwan();
 void Poolplaatsing_Iwan(float &Kp, float &Kd, float m);
 float pwm_links_Iwan(float Fx);
 float pwm_rechts_Iwan(float Fx);
-void motoraansturing_Iwan();
+void motoraansturing_Iwan(float Fx);
 void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m, float dt);
 
 
@@ -295,13 +295,13 @@ void controlMotors(char command) {
       Serial.println("Forward...");
       digitalWrite(motorLinks, LOW);
       digitalWrite(motorRechts, LOW);
-      analogWrite(motorLinksPWM, 255);
-      //analogWrite(motorRechtsPWM, -0.00298 * Fx * Fx - 1.75115 * Fx);
+      digitalWrite(motorLinksPWM, HIGH);
+      digitalWrite(motorRechtsPWM, HIGH);
 
-      digitalWrite(motorLinks, HIGH);
-      digitalWrite(motorRechts, HIGH);
-      analogWrite(motorLinksPWM, 255);
-      //analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
+      digitalWrite(motorLinks, LOW);
+      digitalWrite(motorRechts, LOW);
+      digitalWrite(motorLinksPWM, HIGH);
+      digitalWrite(motorRechtsPWM, HIGH);
       delay(DIR_DELAY);
       // set the motor speed and direction
       digitalWrite(motorLinks, LOW);                // direction = forward
@@ -561,8 +561,8 @@ void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m
 }
 
 void motoraansturing_Iwan(float Fx) {
-  Motor1(Fx);
-  Motor2(Fx);
+  Motor_Rechts(Fx);
+  Motor_Links(Fx);
 }
 
 void setup() {

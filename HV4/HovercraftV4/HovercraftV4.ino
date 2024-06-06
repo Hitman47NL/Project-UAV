@@ -173,7 +173,34 @@ void initTOFsensors() {
     //Eventuele mogelijkheid om fout code uit te breiden
   }
 }
+void Motor_Rechts(float Fx) { //Dit is voor Maxon motor 1
+  if (Fx < 0) { // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+    digitalWrite(motorRechts, LOW);
+    analogWrite(motorRechtsPWM, -0.00298 * Fx * Fx - 1.75115 * Fx);
+  } else { // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
+    digitalWrite(motorRechts, HIGH);
+    analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
+  }
+}
 
+void Motor_Links(float Fx) { //Dit is voor Maxon motor 2
+  if (Fx < 0) { // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+    digitalWrite(motorLinks, LOW);
+    analogWrite(motorLinksPWM, -0.00282 * Fx * Fx -1.70725 * Fx);
+  } else { // dit is voor wanneer de hovercraft voorwaarts moet bewegen
+    digitalWrite(motorLinks, HIGH);
+    analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
+  }
+}
+void Motor_midden(float Fy) { //Dit is voor de kleine motor
+  if (Fy < 0) { // dit is voor wanneer de hovercraft links moet bewegen
+    digitalWrite(motorRechts, LOW);
+    analogWrite(motorRechtsPWM, 0.00519 * Fy * Fy - 0.67075 * Fy);
+  } else { // dit is voor wanneer de hovercraft rechts moet bewegen
+    digitalWrite(motorRechts, HIGH);
+    analogWrite(motorRechtsPWM, 0.01060 * Fy * Fy + 1.12248 * Fy);
+  }
+}
 // Functie voor het instellen voor de Gyroscoop,
 void initGyroSensor() {
   //Check of de gyro is verbonden
@@ -267,14 +294,19 @@ void controlMotors(char command) {
     case '2':  // Forward
       Serial.println("Forward...");
       digitalWrite(motorLinks, LOW);
-      digitalWrite(motorLinksPWM, LOW);
       digitalWrite(motorRechts, LOW);
-      digitalWrite(motorRechtsPWM, LOW);
+      analogWrite(motorLinksPWM, 255);
+      //analogWrite(motorRechtsPWM, -0.00298 * Fx * Fx - 1.75115 * Fx);
+
+      digitalWrite(motorLinks, HIGH);
+      digitalWrite(motorRechts, HIGH);
+      analogWrite(motorLinksPWM, 255);
+      //analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
       delay(DIR_DELAY);
       // set the motor speed and direction
-      digitalWrite(motorLinks, HIGH);               // direction = forward
+      digitalWrite(motorLinks, LOW);                // direction = forward
       analogWrite(motorLinksPWM, 255 - PWM_SLOW);   // PWM speed = slow
-      digitalWrite(motorRechts, HIGH);              // direction = forward
+      digitalWrite(motorRechts, LOW);               // direction = forward
       analogWrite(motorRechtsPWM, 255 - PWM_SLOW);  // PWM speed = slow
       break;
     case '3':  // Soft stop (coast)
@@ -335,22 +367,22 @@ void controlMotors(char command) {
 //Functie om de batterij uit te lezen
 void checkBattery() {
 
-  int aDC = -1023 + analogRead(ACCU_SAFETY_PIN);   //Uitlezen sensor
-  float voltage = abs(aDC * 5 / 1023.);         // Omrekenen naar spanning
-  float ampere = (voltage - 2.47) / 0.066;  // Omrekenen naar stroom
+  int aDC = -1023 + analogRead(ACCU_SAFETY_PIN);  //Uitlezen sensor
+  float voltage = abs(aDC * 5 / 1023.);           // Omrekenen naar spanning
+  float ampere = (voltage - 2.47) / 0.066;        // Omrekenen naar stroom
 
   Serial.println("Battery raw: " + String(aDC));
   Serial.println("Voltage: " + String(voltage));
   Serial.println("Battery Ampere: " + String(ampere));
   float ACSDC = stroommeter.getCurrentDC();
-  
-    Serial.println("Battery VOLT: " + String(ACSDC));
+
+  Serial.println("Battery VOLT: " + String(ACSDC));
 
   if (ampere < LOW_BATTERY_THRESHOLD) {
     Serial.println("Low battery! Ampere: " + String(ampere));
     playFailTune();
     // Perform any additional actions like stopping the motors
-   // digitalWrite(NOODSTOPRELAY, LOW);  //Zodat de noodstop wordt geactiveerd
+    // digitalWrite(NOODSTOPRELAY, LOW);  //Zodat de noodstop wordt geactiveerd
     //controlMotors('6');                // Hard stop
   }
 }
@@ -486,16 +518,16 @@ int krachtToPWM(float kracht) {
   return pwm;
 }
 
-void Regelaar_Iwan(){
+void Regelaar_Iwan() {
   const long cyclustijd = 10;
   long t_oud;
-  const float m = 1.560; // In gram
-  float dt = 1; // Nodig voor de d_error / dt
+  const float m = 1.560;  // In gram
+  float dt = 1;           // Nodig voor de d_error / dt
   float Fx;
-  float vx, sx; // Begin voor waarde van de regelaar
-  float Kp , Kd; // paramateres voor de regelaar
-  const float sp = 300.0; // Setpoint voor het stoppen van de regelaar
-  
+  float sx = TOFsensor3 / 1000;  // Begin voor waarde van de regelaar in m
+  float Kp, Kd;                  // paramateres voor de regelaar
+  const float sp = 0.3;          // Setpoint voor het stoppen van de regelaar m
+
   Poolplaatsing_Iwan(Kp, Kd, m);
   Serial.print("Kp: ");
   Serial.println(Kp);
@@ -503,42 +535,34 @@ void Regelaar_Iwan(){
   Serial.println(Kd);
 
   float t_nw = millis();
-  if (t_nw - t_oud > cyclustijd){
+  if (t_nw - t_oud > cyclustijd) {
     dt = (t_nw - t_oud) * 0.001;
     t_oud = t_nw;
 
     Regeling_PD_Iwan(Fx, Kp, Kd, sp, sx, m, dt);
     Serial.print("PD_Iwan: ");
     Serial.print(Fx);
-    motoraansturing_Iwan(Fx);
+
+    motoraansturing_Iwan(Fx / 2);
   }
-  
 }
-void Poolplaatsing_Iwan(float &Kp, float &Kd, float m){
+void Poolplaatsing_Iwan(float &Kp, float &Kd, float m) {
   const float Re = 2.0, Im = 1.5;
   Kp = (Re * Re + Im * Im) * m;
   Kd = 2 * Re * m;
 }
 
-void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m, float dt){
+void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m, float dt) {
   float error = sp - sx;
   float error_oud = error;
   float d_error = error - error_oud;
   float errorSom = errorSom + error * dt;
-  Fx = Kp * error + Kd * d_error /dt;
+  Fx = Kp * error + Kd * d_error / dt;
 }
 
-float pwm_links_Iwan(float Fx){
-  const int aL = 300, bL = 100;
-  analogWrite(motorLinksPWM, constrain(aL * Fx / 2 + bL, 0, 0));
-}
-float pwm_rechts_Iwan(float Fx){
-  const int aR = 302, bR = 105;
-  analogWrite(motorLinksPWM, constrain(aR * Fx / 2 + bR, 0, 0));
-}
-void motoraansturing_Iwan(float Fx){
-  pwm_links_Iwan(Fx);
-  pwm_rechts_Iwan(Fx);
+void motoraansturing_Iwan(float Fx) {
+  Motor1(Fx);
+  Motor2(Fx);
 }
 
 void setup() {
@@ -590,7 +614,7 @@ void loop() {
   readGyro();
   dataPrinten();
   readDualSensors();
-  Regelaar_Iwan();
+  //Regelaar_Iwan();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(TOFsensor1);

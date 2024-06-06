@@ -10,8 +10,8 @@ import data.motor2_3blad as motor2_3blad
 fig, axs = plt.subplots(1, 3, figsize=(16, 6))
 
 # Plot data for motor 1
-axs[0].plot(motor1_3blad.PWM_1_3blad_pos, motor1_3blad.meting_1_3blad_pos, marker= 'o', label='Motor 1 [+]', color = 'magenta')
-axs[0].plot(motor1_3blad.PWM_1_3blad_neg, motor1_3blad.meting_1_3blad_neg, marker= 'o', label='Motor 1 [-]', color = 'lime')
+axs[0].plot(motor1_3blad.meting_1_3blad_pos, motor1_3blad.PWM_1_3blad_pos, marker= 'o', label='Motor 1 [+]', color = 'magenta')
+axs[0].plot(motor1_3blad.meting_1_3blad_neg,motor1_3blad.PWM_1_3blad_neg, marker= 'o', label='Motor 1 [-]', color = 'lime')
 axs[0].set_xlabel('PWM')
 axs[0].set_ylabel('Kracht [mN]')
 axs[0].set_title('Motor 1, 3 blade propellor')

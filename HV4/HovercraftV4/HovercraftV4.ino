@@ -52,6 +52,14 @@ const int RXPin = 19;
 const int TXPin = 18;
 SoftwareSerial mySerial(RXPin, TXPin);
 
+// Benodigde functies
+void Regelaar_Iwan();
+void Poolplaatsing_Iwan(float &Kp, float &Kd, float m);
+float pwm_links_Iwan(float Fx);
+float pwm_rechts_Iwan(float Fx);
+void motoraansturing_Iwan();
+void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m, float dt);
+
 
 //Vaste waardes
 #define MAX_PWM 255  //Voor regelaar
@@ -478,6 +486,61 @@ int krachtToPWM(float kracht) {
   return pwm;
 }
 
+void Regelaar_Iwan(){
+  const long cyclustijd = 10;
+  long t_oud;
+  const float m = 1.560; // In gram
+  float dt = 1; // Nodig voor de d_error / dt
+  float Fx;
+  float vx, sx; // Begin voor waarde van de regelaar
+  float Kp , Kd; // paramateres voor de regelaar
+  const float sp = 300.0; // Setpoint voor het stoppen van de regelaar
+  
+  Poolplaatsing_Iwan(Kp, Kd, m);
+  Serial.print("Kp: ");
+  Serial.println(Kp);
+  Serial.print("Kd: ");
+  Serial.println(Kd);
+
+  float t_nw = millis();
+  if (t_nw - t_oud > cyclustijd){
+    dt = (t_nw - t_oud) * 0.001;
+    t_oud = t_nw;
+
+    Regeling_PD_Iwan(Fx, Kp, Kd, sp, sx, m, dt);
+    Serial.print("PD_Iwan: ");
+    Serial.print(Fx);
+    motoraansturing_Iwan(Fx);
+  }
+  
+}
+void Poolplaatsing_Iwan(float &Kp, float &Kd, float m){
+  const float Re = 2.0, Im = 1.5;
+  Kp = (Re * Re + Im * Im) * m;
+  Kd = 2 * Re * m;
+}
+
+void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m, float dt){
+  float error = sp - sx;
+  float error_oud = error;
+  float d_error = error - error_oud;
+  float errorSom = errorSom + error * dt;
+  Fx = Kp * error + Kd * d_error /dt;
+}
+
+float pwm_links_Iwan(float Fx){
+  const int aL = 300, bL = 100;
+  analogWrite(motorLinksPWM, constrain(aL * Fx / 2 + bL, 0, 0));
+}
+float pwm_rechts_Iwan(float Fx){
+  const int aR = 302, bR = 105;
+  analogWrite(motorLinksPWM, constrain(aR * Fx / 2 + bR, 0, 0));
+}
+void motoraansturing_Iwan(float Fx){
+  pwm_links_Iwan(Fx);
+  pwm_rechts_Iwan(Fx);
+}
+
 void setup() {
   //Communicatie
   Serial.begin(9600);
@@ -508,6 +571,8 @@ void setup() {
   initTOFsensors();  // Om de TOF sensoren te initialiseren
   initGyroSensor();  // Om de gyro te initialiseren
 
+  Regelaar_Iwan();
+
   bootupCheck();
   delay(500);
 }
@@ -525,6 +590,7 @@ void loop() {
   readGyro();
   dataPrinten();
   readDualSensors();
+  Regelaar_Iwan();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(TOFsensor1);

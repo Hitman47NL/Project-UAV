@@ -19,10 +19,10 @@
 #define BUZZER_PINP 7
 #define BUZZER_PIN 5
 #define BUZZER_PINM 6
-#define motorLinksPWM 9    //  Motor B Input A
-#define motorLinks 8       //  Motor B Input B
-#define motorRechtsPWM 11  //  Motor A Input A
-#define motorRechts 10     //  Motor A Input B
+#define motorLinksPWM 11    //  Motor B Input A
+#define motorLinks 10       //  Motor B Input B
+#define motorRechtsPWM 9  //  Motor A Input A
+#define motorRechts 8    //  Motor A Input B
 
 //Digitale pinnen
 #define BLOWRELAY 12
@@ -54,12 +54,13 @@ SoftwareSerial mySerial(RXPin, TXPin);
 
 // Benodigde functies
 void Regelaar_Iwan();
-void Poolplaatsing_Iwan(float &Kp, float &Kd, float m);
-float pwm_links_Iwan(float Fx);
-float pwm_rechts_Iwan(float Fx);
+void Regelaar_Bram();
+void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im);
+void Poolplaatsing_PID(float &Kp, float &Kd, float &Ki, float Iz, float Re, float Im, float pool3);
+void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt);
+void Regeling_PID(float &Fx, float Kp, float Kd, float Ki, float sp, float theta, float dt);
 void motoraansturing_Iwan(float Fx);
-void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m, float dt);
-
+void motoraansturing_Bram(float Fx);
 
 //Vaste waardes
 #define MAX_PWM 255  //Voor regelaar
@@ -96,9 +97,9 @@ int receivedX = 0;  // Variable to store the received X coordinate
 int receivedY = 0;  // Variable to store the received Y coordinate
 
 //Voor TOFsensoren
-int TOFsensor1 = 0;  //mm
-int TOFsensor2 = 0;  //mm
-int TOFsensor3 = 0;  //mm
+float TOFsensor1 = 0.0;  //mm
+float TOFsensor2 = 0.0;  //mm
+float TOFsensor3 = 0.0;  //mm
 float TOFsensor1M = 0.0;
 float TOFsensor2M = 0.0;
 float degAngle = 0.0;
@@ -173,30 +174,41 @@ void initTOFsensors() {
     //Eventuele mogelijkheid om fout code uit te breiden
   }
 }
-void Motor_Rechts(float Fx) { //Dit is voor Maxon motor 1
-  if (Fx < 0) { // dit is voor wanneer de hovercraft achterwaarts moet bewegen
-    digitalWrite(motorRechts, LOW);
-    analogWrite(motorRechtsPWM, -0.00298 * Fx * Fx - 1.75115 * Fx);
-  } else { // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
+void Motor_Rechts(float Fx) {  // Dit is voor Maxon motor 2
+  if (Fx > 0) {               // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+    Serial.print("PWM Maxon 2 pos: ");
+    float Fx_nega = Fx * -1;             
+    Serial.println(-0.00282 * Fx * Fx - 1.70725 * Fx);
+    digitalWrite(motorLinks, LOW);
+    analogWrite(motorLinksPWM, -0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega);
+  } else {  // dit is voor wanneer de hovercraft voorwaarts moet bewegen
+    Serial.print("PWM Maxon 2 nega: ");             
+    Serial.println(-0.00425 * Fx * Fx + 2.077594 * Fx);
+    digitalWrite(motorLinks, HIGH);
+    analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
+  }
+}
+
+void Motor_Links(float Fx) {  // Dit is voor Maxon motor 1
+  if (Fx > 0) {   // hierdoor gaat de uav achteruit
+    Serial.print("PWM Maxon 1 pos: ");             
+    float Fx_nega = Fx * -1;
+    Serial.println(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
+    digitalWrite(motorRechts, LOW); // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+    analogWrite(motorRechtsPWM, -0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
+  } else {  // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
+    Serial.print("PWM Maxon 1 nega: ");             
+    Serial.println(-0.00505 * Fx * Fx + 2.25550 * Fx);
     digitalWrite(motorRechts, HIGH);
     analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
   }
 }
 
-void Motor_Links(float Fx) { //Dit is voor Maxon motor 2
-  if (Fx < 0) { // dit is voor wanneer de hovercraft achterwaarts moet bewegen
-    digitalWrite(motorLinks, LOW);
-    analogWrite(motorLinksPWM, -0.00282 * Fx * Fx -1.70725 * Fx);
-  } else { // dit is voor wanneer de hovercraft voorwaarts moet bewegen
-    digitalWrite(motorLinks, HIGH);
-    analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
-  }
-}
-void Motor_midden(float Fy) { //Dit is voor de kleine motor
-  if (Fy < 0) { // dit is voor wanneer de hovercraft links moet bewegen
+void Motor_midden(float Fy) {  //Dit is voor de kleine motor
+  if (Fy < 0) {                // dit is voor wanneer de hovercraft links moet bewegen
     digitalWrite(motorRechts, LOW);
     analogWrite(motorRechtsPWM, 0.00519 * Fy * Fy - 0.67075 * Fy);
-  } else { // dit is voor wanneer de hovercraft rechts moet bewegen
+  } else {  // dit is voor wanneer de hovercraft rechts moet bewegen
     digitalWrite(motorRechts, HIGH);
     analogWrite(motorRechtsPWM, 0.01060 * Fy * Fy + 1.12248 * Fy);
   }
@@ -270,7 +282,7 @@ float calculateAngle() {
     Serial.println(-degAngle);  //Printen in terminal
     lcd.setCursor(5, 0);        //Waar de lcd print 1ste rij 6de kolom
     lcd.print(-degAngle);       //Print de negatieve hoek in graden
-    return -degAngle;           //Geeft de negatieve hoek in graden terug om te gebruiken voor de regelaar
+    return -radAngle;           //Geeft de negatieve hoek in graden terug om te gebruiken voor de regelaar
   }
 }
 //Om de motor handmatig aan te sturen
@@ -282,6 +294,8 @@ void controlMotors(char command) {
       // set the motor speed and direction
       digitalWrite(BLOWRELAY, HIGH);
       digitalWrite(NOODSTOPRELAY, HIGH);
+      Regelaar_Iwan();
+      /*
       digitalWrite(motorLinks, HIGH);               // direction = forward
       analogWrite(motorLinksPWM, 255 - PWM_FAST);   // PWM speed = fast
       digitalWrite(motorRechts, HIGH);              // direction = forward
@@ -290,8 +304,10 @@ void controlMotors(char command) {
       digitalWrite(motorZijkant, HIGH);
       digitalWrite(motorZijkantIn1, LOW);
       digitalWrite(motorZijkantIn2, HIGH);
+      */
       break;
     case '2':  // Forward
+      /*
       Serial.println("Forward...");
       digitalWrite(motorLinks, LOW);
       digitalWrite(motorRechts, LOW);
@@ -308,6 +324,12 @@ void controlMotors(char command) {
       analogWrite(motorLinksPWM, 255 - PWM_SLOW);   // PWM speed = slow
       digitalWrite(motorRechts, LOW);               // direction = forward
       analogWrite(motorRechtsPWM, 255 - PWM_SLOW);  // PWM speed = slow
+      */
+      digitalWrite(NOODSTOPRELAY, HIGH);
+      delay(500);
+      digitalWrite(BLOWRELAY, HIGH);
+      delay(500);
+      Regelaar_Iwan();
       break;
     case '3':  // Soft stop (coast)
       Serial.println("Soft stop (coast)...");
@@ -506,61 +528,117 @@ void bootupCheck() {
     delay(2000);
   }
 }
-//Functie voor de regelaars
-int krachtToPWM(float kracht) {
-  // Aangenomen dat de krachtwaarde tussen 0 en 1 ligt.
-  // Pas dit bereik aan indien nodig.
-  if (kracht < 0) kracht = 0;
-  if (kracht > 1) kracht = 1;
 
-  // Lineaire mapping van kracht (0-1) naar PWM (0-255)
-  int pwm = (int)(kracht * (MAX_PWM - MIN_PWM) + MIN_PWM);
-  return pwm;
-}
 
 void Regelaar_Iwan() {
-  const long cyclustijd = 10;
-  long t_oud;
-  const float m = 1.560;  // In gram
-  float dt = 1;           // Nodig voor de d_error / dt
-  float Fx;
-  float sx = TOFsensor3 / 1000;  // Begin voor waarde van de regelaar in m
-  float Kp, Kd;                  // paramateres voor de regelaar
-  const float sp = 0.3;          // Setpoint voor het stoppen van de regelaar m
+  readDualSensors();
+  const long cyclustijd = 10;  // Cyclustijd in ms
+  static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
+  long t_nw = millis();        // Get the current time in ms
+  const float Re = 0.75, Im = 1.0;
+  const float m = 1560;       // In kilo gram
+  float dt = 1;                // Nodig voor de d_error / dt
+  float Fx, Fy;        // Initialize Fx and Fy
+  float sx = TOFsensor3/1000;       // Begin voor waarde van de regelaar in cm
+  float Kp, Kd;                // Paramateres voor de regelaar
+  const float sp = 0.3;        // Setpoint voor het stoppen van de regelaar cm
 
-  Poolplaatsing_Iwan(Kp, Kd, m);
+  Serial.print("TOFsensor3 (sx): ");
+  Serial.println(sx, 4);
+
+  Poolplaatsing_PD(Kp, Kd, m, Re, Im);
   Serial.print("Kp: ");
   Serial.println(Kp);
   Serial.print("Kd: ");
   Serial.println(Kd);
 
-  float t_nw = millis();
+  if (t_nw - t_oud > cyclustijd) {  // Check if the cyclustijd has passed
+    dt = (t_nw - t_oud) * 0.001;    // Calculate dt in seconds
+    t_oud = t_nw;                   // Update t_oud to the current time
+
+    Regeling_PD(Fx, Fy, Kp, Kd, sp, sx, dt);
+    Serial.print("PD Output Fx: ");
+    Serial.println(Fx);
+    Serial.print("PD Output Fy: ");
+    Serial.println(Fy);
+
+    motoraansturing_Iwan(Fx / 2);   // Control the motors with half of Fx
+  } 
+}
+
+void Regelaar_Bram() {
+  const long cyclustijd = 10;
+  long t_oud, t_nw;
+  float dt;
+  const float Re = 2.5, Im = 4, pool3 = 0.005;
+  const float m = 1.560;
+  const float Iz = 0.115405;
+  float theta = calculateAngle();
+  float Kp, Kd, Ki;
+  float Fx;
+  const float sp = 1.0;
+
+  Serial.print("theta: ");
+  Serial.println(theta);
+
+  Poolplaatsing_PID(Kp, Kd, Ki, Iz, Re, Im, pool3);
+  Serial.print("Kp: ");
+  Serial.println(Kp);
+  Serial.print("Kd: ");
+  Serial.println(Kd);
+  Serial.print("Ki: ");
+  Serial.println(Ki);
+
+  t_nw = millis();
   if (t_nw - t_oud > cyclustijd) {
     dt = (t_nw - t_oud) * 0.001;
     t_oud = t_nw;
 
-    Regeling_PD_Iwan(Fx, Kp, Kd, sp, sx, m, dt);
-    Serial.print("PD_Iwan: ");
+    Regeling_PID(Fx, Kp, Kd, Ki, sp, theta, dt);
+    Serial.print("PD_Bram: ");
     Serial.print(Fx);
 
-    motoraansturing_Iwan(Fx / 2);
+    motoraansturing_Bram(Fx / 2);
   }
 }
-void Poolplaatsing_Iwan(float &Kp, float &Kd, float m) {
-  const float Re = 2.0, Im = 1.5;
+
+void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im) {
   Kp = (Re * Re + Im * Im) * m;
   Kd = 2 * Re * m;
 }
+void Poolplaatsing_PID(float &Kp, float &Kd, float &Ki, float Iz, float Re, float Im, float pool3) {
+  Kp = (Re * Re + Im * Im + 2 * Re * pool3) * Iz;
+  Kd = (2 * Re + pool3) * Iz;
+  Ki = (Re * Re + Im * Im) * pool3 * Iz;
+}
 
-void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float m, float dt) {
+void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
+  static float error_oud = 0;  // Initialize previous error
   float error = sp - sx;
+  float d_error = (error - error_oud) / dt;  // Calculate derivative of error
+  error_oud = error;  // Update previous error
+  Fx = Kp * error + Kd * d_error;
+  Fy = Fx;  // Assuming Fy should be the same as Fx for this example
+
+  Serial.print("Error: ");
+  Serial.println(error);
+  Serial.print("d_error: ");
+  Serial.println(d_error);
+  Serial.print("Fx: ");
+  Serial.println(Fx);
+}
+void Regeling_PID(float &Fx, float Kp, float Kd, float Ki, float sp, float theta, float dt) {
+  float error = sp - theta;
   float error_oud = error;
   float d_error = error - error_oud;
   float errorSom = errorSom + error * dt;
-  Fx = Kp * error + Kd * d_error / dt;
+  Fx = Kp * error + Kd * d_error / dt + Ki * errorSom;
 }
-
 void motoraansturing_Iwan(float Fx) {
+  Motor_Rechts(Fx);
+  Motor_Links(Fx);
+}
+void motoraansturing_Bram(float Fx) {
   Motor_Rechts(Fx);
   Motor_Links(Fx);
 }
@@ -587,15 +665,10 @@ void setup() {
 
   initWrites();  // Om de motoren niet gelijk te laten draaien
   delay(100);
-  delay(100);
-  digitalWrite(BLOWRELAY, LOW);       //Verander naar HIGH om de blowers gelijk aan te zetten
-  digitalWrite(NOODSTOPRELAY, HIGH);  // Zorgt dat overal stroom naar toe kan
   delay(100);                         //stabiliteit
 
   initTOFsensors();  // Om de TOF sensoren te initialiseren
   initGyroSensor();  // Om de gyro te initialiseren
-
-  Regelaar_Iwan();
 
   bootupCheck();
   delay(500);
@@ -614,7 +687,9 @@ void loop() {
   readGyro();
   dataPrinten();
   readDualSensors();
-  //Regelaar_Iwan();
+  digitalWrite(NOODSTOPRELAY, HIGH);
+  digitalWrite(BLOWRELAY, HIGH);
+  Regelaar_Iwan();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(TOFsensor1);
@@ -623,6 +698,7 @@ void loop() {
   lcd.setCursor(5, 1);
   lcd.print(gAngle.z);
   calculateAngle();
+
 
   int reading = digitalRead(buttonPin);
 

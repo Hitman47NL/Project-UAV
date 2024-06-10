@@ -1,5 +1,4 @@
-// Gemaakt door Jelle
-// Hiermee kunnen de MPU9250 en de TOF sensoren worden uitgelezen
+// Gemaakt door Jelle en Iwan
 
 //Libraries
 #include "Grove_Motor_Driver_TB6612FNG.h"
@@ -19,10 +18,10 @@
 #define BUZZER_PINP 7
 #define BUZZER_PIN 5
 #define BUZZER_PINM 6
-#define motorLinksPWM 11    //  Motor B Input A
-#define motorLinks 10       //  Motor B Input B
+#define motorLinksPWM 11  //  Motor B Input A
+#define motorLinks 10     //  Motor B Input B
 #define motorRechtsPWM 9  //  Motor A Input A
-#define motorRechts 8    //  Motor A Input B
+#define motorRechts 8     //  Motor A Input B
 
 //Digitale pinnen
 #define BLOWRELAY 12
@@ -35,6 +34,7 @@
 #define motorZijkant 39
 #define motorZijkantIn2 35
 #define motorZijkantIn1 37
+
 //Analoog
 #define ACCU_SAFETY_PIN A0
 
@@ -42,9 +42,7 @@
 #define TOF1_ADDR 0x30
 #define TOF2_ADDR 0x31
 #define TOF3_ADDR 0x32
-
 #define MPU9250_ADDR 0x68
-
 #define LCD_ADDR 0x27
 
 // RX and TX pins for SoftwareSerial
@@ -53,8 +51,6 @@ const int TXPin = 18;
 SoftwareSerial mySerial(RXPin, TXPin);
 
 // Benodigde functies
-void Regelaar_Iwan();
-void Regelaar_Bram();
 void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im);
 void Poolplaatsing_PID(float &Kp, float &Kd, float &Ki, float Iz, float Re, float Im, float pool3);
 void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt);
@@ -104,35 +100,35 @@ float TOFsensor1M = 0.0;
 float TOFsensor2M = 0.0;
 float degAngle = 0.0;
 float radAngle = 0.0;
-//Functie om geluid af te spelen
-void playTone(int tone, int duration) {
-  for (long i = 0; i < duration * 100L; i += tone * 2) {
-    digitalWrite(BUZZER_PIN, HIGH);
-    delayMicroseconds(tone);
-    digitalWrite(BUZZER_PIN, LOW);
-    delayMicroseconds(tone);
-  }
-}
-//Geluid voor succes
-void playSuccessTune() {
-  int melody[] = { 220, 196, 165, 131 };
-  int noteDuration = 150;
 
-  for (int note : melody) {
-    playTone(note, noteDuration);
-    delay(150);
-  }
-}
-//Geluid voor vaal
-void playFailTune() {
-  int melody[] = { 294, 392, 600, 1600 };
-  int noteDuration = 150;
+void setup() {
+  //Communicatie
+  Serial.begin(9600);
+  mySerial.begin(9600);
+  // analogReference(INTERNAL1V1);
+  Wire.begin();
+  //LCD
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Starting up");  //Zodat de user weet dat er iets gebeurd
+  //Serial
+  Serial.println("Starting...");  //Zodat de programmeur weet dat er iets gebeurd
+  checkBattery();                 // Om de baterij bij opstarten te checken
+  setPins();                      //Om de pinnen juist op in en output te zetten
+  initWrites();                   // Om de motoren niet gelijk te laten draaien
+  delay(100);
+  initTOFsensors();  // Om de TOF sensoren te initialiseren
+  initGyroSensor();  // Om de gyro te initialiseren
 
-  for (int note : melody) {
-    playTone(note, noteDuration);
-    delay(150);
-  }
+  bootupCheck();
+  delay(100);
+  digitalWrite(NOODSTOPRELAY, HIGH);
+  delay(500);
+  digitalWrite(BLOWRELAY, HIGH);
+  delay(100);
 }
+
 // Functie voor het instellen van de adressen van de TOF sensoren. Code kan worden uitgebreid om acties te ondernemen bij het niet opstarten van de TOF senosren
 void initTOFsensors() {
   //Zet alle pinnen laag
@@ -175,14 +171,14 @@ void initTOFsensors() {
   }
 }
 void Motor_Rechts(float Fx) {  // Dit is voor Maxon motor 2
-  if (Fx > 0) {               // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+  if (Fx > 0) {                // dit is voor wanneer de hovercraft achterwaarts moet bewegen
     Serial.print("PWM Maxon 2 pos: ");
-    float Fx_nega = Fx * -1;             
+    float Fx_nega = Fx * -1;
     Serial.println(-0.00282 * Fx * Fx - 1.70725 * Fx);
     digitalWrite(motorLinks, LOW);
     analogWrite(motorLinksPWM, -0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega);
   } else {  // dit is voor wanneer de hovercraft voorwaarts moet bewegen
-    Serial.print("PWM Maxon 2 nega: ");             
+    Serial.print("PWM Maxon 2 nega: ");
     Serial.println(-0.00425 * Fx * Fx + 2.077594 * Fx);
     digitalWrite(motorLinks, HIGH);
     analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
@@ -190,14 +186,14 @@ void Motor_Rechts(float Fx) {  // Dit is voor Maxon motor 2
 }
 
 void Motor_Links(float Fx) {  // Dit is voor Maxon motor 1
-  if (Fx > 0) {   // hierdoor gaat de uav achteruit
-    Serial.print("PWM Maxon 1 pos: ");             
+  if (Fx > 0) {               // hierdoor gaat de uav achteruit
+    Serial.print("PWM Maxon 1 pos: ");
     float Fx_nega = Fx * -1;
     Serial.println(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
-    digitalWrite(motorRechts, LOW); // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+    digitalWrite(motorRechts, LOW);  // dit is voor wanneer de hovercraft achterwaarts moet bewegen
     analogWrite(motorRechtsPWM, -0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
   } else {  // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
-    Serial.print("PWM Maxon 1 nega: ");             
+    Serial.print("PWM Maxon 1 nega: ");
     Serial.println(-0.00505 * Fx * Fx + 2.25550 * Fx);
     digitalWrite(motorRechts, HIGH);
     analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
@@ -292,8 +288,6 @@ void controlMotors(char command) {
       Serial.println("Fast forward...");
 
       // set the motor speed and direction
-      digitalWrite(BLOWRELAY, HIGH);
-      digitalWrite(NOODSTOPRELAY, HIGH);
       Regelaar_Iwan();
       /*
       digitalWrite(motorLinks, HIGH);               // direction = forward
@@ -427,7 +421,6 @@ void setPins() {
   pinMode(motorRechtsPWM, OUTPUT);
   pinMode(BUZZER_PINP, OUTPUT);
   pinMode(BUZZER_PINM, OUTPUT);
-  delay(100);
 }
 //Deze functie zorgt dat de motoren niet gelijk aan gaan
 void initWrites() {
@@ -443,7 +436,6 @@ void initWrites() {
 
   digitalWrite(motorRechts, LOW);
   digitalWrite(motorRechtsPWM, LOW);
-  delay(100);
 }
 //Functie voor waardes uit gyro the halen.
 void readGyro() {
@@ -530,77 +522,6 @@ void bootupCheck() {
 }
 
 
-void Regelaar_Iwan() {
-  readDualSensors();
-  const long cyclustijd = 10;  // Cyclustijd in ms
-  static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
-  long t_nw = millis();        // Get the current time in ms
-  const float Re = 0.75, Im = 1.0;
-  const float m = 1560;       // In kilo gram
-  float dt = 1;                // Nodig voor de d_error / dt
-  float Fx, Fy;        // Initialize Fx and Fy
-  float sx = TOFsensor3/1000;       // Begin voor waarde van de regelaar in cm
-  float Kp, Kd;                // Paramateres voor de regelaar
-  const float sp = 0.3;        // Setpoint voor het stoppen van de regelaar cm
-
-  Serial.print("TOFsensor3 (sx): ");
-  Serial.println(sx, 4);
-
-  Poolplaatsing_PD(Kp, Kd, m, Re, Im);
-  Serial.print("Kp: ");
-  Serial.println(Kp);
-  Serial.print("Kd: ");
-  Serial.println(Kd);
-
-  if (t_nw - t_oud > cyclustijd) {  // Check if the cyclustijd has passed
-    dt = (t_nw - t_oud) * 0.001;    // Calculate dt in seconds
-    t_oud = t_nw;                   // Update t_oud to the current time
-
-    Regeling_PD(Fx, Fy, Kp, Kd, sp, sx, dt);
-    Serial.print("PD Output Fx: ");
-    Serial.println(Fx);
-    Serial.print("PD Output Fy: ");
-    Serial.println(Fy);
-
-    motoraansturing_Iwan(Fx / 2);   // Control the motors with half of Fx
-  } 
-}
-
-void Regelaar_Bram() {
-  const long cyclustijd = 10;
-  long t_oud, t_nw;
-  float dt;
-  const float Re = 2.5, Im = 4, pool3 = 0.005;
-  const float m = 1.560;
-  const float Iz = 0.115405;
-  float theta = calculateAngle();
-  float Kp, Kd, Ki;
-  float Fx;
-  const float sp = 1.0;
-
-  Serial.print("theta: ");
-  Serial.println(theta);
-
-  Poolplaatsing_PID(Kp, Kd, Ki, Iz, Re, Im, pool3);
-  Serial.print("Kp: ");
-  Serial.println(Kp);
-  Serial.print("Kd: ");
-  Serial.println(Kd);
-  Serial.print("Ki: ");
-  Serial.println(Ki);
-
-  t_nw = millis();
-  if (t_nw - t_oud > cyclustijd) {
-    dt = (t_nw - t_oud) * 0.001;
-    t_oud = t_nw;
-
-    Regeling_PID(Fx, Kp, Kd, Ki, sp, theta, dt);
-    Serial.print("PD_Bram: ");
-    Serial.print(Fx);
-
-    motoraansturing_Bram(Fx / 2);
-  }
-}
 
 void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im) {
   Kp = (Re * Re + Im * Im) * m;
@@ -616,7 +537,7 @@ void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, f
   static float error_oud = 0;  // Initialize previous error
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
-  error_oud = error;  // Update previous error
+  error_oud = error;                         // Update previous error
   Fx = Kp * error + Kd * d_error;
   Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
@@ -643,37 +564,6 @@ void motoraansturing_Bram(float Fx) {
   Motor_Links(Fx);
 }
 
-void setup() {
-  //Communicatie
-  Serial.begin(9600);
-  mySerial.begin(9600);
-  // analogReference(INTERNAL1V1);
-
-  Wire.begin();
-  //LCD
-
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print("Starting up");  //Zodat de user weet dat er iets gebeurd
-
-  //Serial
-  Serial.println("Starting...");  //Zodat de programmeur weet dat er iets gebeurd
-
-  checkBattery();  // Om de baterij bij opstarten te checken
-  setPins();       //Om de pinnen juist op in en output te zetten
-
-  initWrites();  // Om de motoren niet gelijk te laten draaien
-  delay(100);
-  delay(100);                         //stabiliteit
-
-  initTOFsensors();  // Om de TOF sensoren te initialiseren
-  initGyroSensor();  // Om de gyro te initialiseren
-
-  bootupCheck();
-  delay(500);
-}
-
 void loop() {
   if (Serial.available()) {
     char command = Serial.read();
@@ -687,9 +577,15 @@ void loop() {
   readGyro();
   dataPrinten();
   readDualSensors();
+  communicatie();
+  Regelaar_Iwan();
+  //Regelaar_Bram();
+  Regelaar_Jari();
+  Regelaar_Jelle();
+  Regelaar_Teun();
+  Regelaar_Maurits();
   digitalWrite(NOODSTOPRELAY, HIGH);
   digitalWrite(BLOWRELAY, HIGH);
-  Regelaar_Iwan();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(TOFsensor1);
@@ -698,48 +594,5 @@ void loop() {
   lcd.setCursor(5, 1);
   lcd.print(gAngle.z);
   calculateAngle();
-
-
-  int reading = digitalRead(buttonPin);
-
-  if (reading != lastButtonState) {
-    lastDebounceTime = millis();
-  }
-
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (reading != buttonState) {
-      buttonState = reading;
-      if (buttonState == LOW) {
-        mySerial.println("0,0");  // Send coordinates to Raspberry Pi
-        Serial.println("Sent coordinates: X=0, Y=0");
-      }
-    }
-  }
-
-  lastButtonState = reading;
-
-  if (mySerial.available()) {
-    String coordinates = mySerial.readStringUntil('\n');
-    coordinates.trim();
-    if (coordinates.length() > 0) {
-      Serial.print("Received modified coordinates: ");
-      Serial.println(coordinates);
-
-      // Parsing the coordinates
-      int commaIndex = coordinates.indexOf(',');
-      if (commaIndex != -1) {
-        receivedX = coordinates.substring(0, commaIndex).toInt();
-        receivedY = coordinates.substring(commaIndex + 1).toInt();
-
-        Serial.print("Parsed X: ");
-        Serial.print(receivedX);
-        Serial.print(", Parsed Y: ");
-        Serial.println(receivedY);
-      } else {
-        Serial.println("Error: Received string is not in expected format.");
-      }
-    } else {
-      Serial.println("Error: No data received.");
-    }
-  }
+  communicatie();
 }

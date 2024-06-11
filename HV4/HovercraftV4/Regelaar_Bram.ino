@@ -1,4 +1,5 @@
 void Regelaar_Bram() {
+  /*
   const long cyclustijd = 10;
   long t_oud, t_nw;
   float dt;
@@ -31,5 +32,14 @@ void Regelaar_Bram() {
     Serial.print(Fx);
 
     motoraansturing_Bram(Fx / 2);
+    
   }
+  */
 }
+/*
+void motoraansturing_Bram(float Fx_PID) {
+
+  Motor_Rechts(Fx_PID);
+  Motor_Links(Fx_PID);
+}
+*/

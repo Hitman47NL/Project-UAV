@@ -50,14 +50,6 @@ const int RXPin = 19;
 const int TXPin = 18;
 SoftwareSerial mySerial(RXPin, TXPin);
 
-// Benodigde functies
-void Poolplaatsing_PD(float &Kp_PD, float &Kd_PD, float m, float Re_PD, float Im_PD);
-void Poolplaatsing_PID(float &K_PID, float &Kd_PID, float &Ki_PID, float Iz, float Re_PID, float Im_PID, float pool3);
-void Regeling_PD(float &Fx_PD, float &Fy_PD, float Kp_PD, float Kd_PD, float sp_PD, float sx, float dt);
-void Regeling_PID(float &Fx_PID, float &Fy_PID, float Kp_PID, float Kd_PID, float Ki_PID, float sp_PID, float theta, float dt);
-void motoraansturing_Iwan(float Fx_PD, float Fx_PID, float Fy_PD, float Fy_PID);
-void motoraansturing_Bram(float Fx_PID);
-
 //Vaste waardes
 #define MAX_PWM 255  //Voor regelaar
 #define MIN_PWM 0    // Voor regelaar
@@ -170,50 +162,7 @@ void initTOFsensors() {
     //Eventuele mogelijkheid om fout code uit te breiden
   }
 }
-void Motor_Rechts(float Fx_PD, float Fx_PID) {  // Dit is voor Maxon motor 2
-  if (Fx_PD > 0) {                              // dit is voor wanneer de hovercraft achterwaarts moet bewegen
-    Serial.print("PWM Maxon 2 pos: ");
-    float Fx_nega = Fx_PD * -1;
-    Serial.println(-0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega);
-    digitalWrite(motorLinks, LOW);
-    analogWrite(motorLinksPWM, -0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega);
-  } else {  // dit is voor wanneer de hovercraft voorwaarts moet bewegen
-    float Fx = Fx_PD, Fx_PID;
-    Serial.print("PWM Maxon 2 nega: ");
-    Serial.println(-0.00425 * Fx * Fx + 2.077594 * Fx);
-    digitalWrite(motorLinks, HIGH);
-    analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
-  }
-}
 
-void Motor_Links(float Fx_PD, float Fx_PID) {  // Dit is voor Maxon motor 1
-  if (Fx_PD > 0) {                             // hierdoor gaat de uav achteruit
-    Serial.print("PWM Maxon 1 pos: ");
-    float Fx_nega = Fx_PD * -1;
-    Fx_nega = Fx_PID * -1;
-    Serial.println(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
-    digitalWrite(motorRechts, LOW);  // dit is voor wanneer de hovercraft achterwaarts moet bewegen
-    analogWrite(motorRechtsPWM, -0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
-  } else {  // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
-    float Fx = Fx_PD, Fx_PID;
-    Serial.print("PWM Maxon 1 nega: ");
-    Serial.println(-0.00505 * Fx * Fx + 2.25550 * Fx);
-    digitalWrite(motorRechts, HIGH);
-    analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
-  }
-}
-
-void Motor_midden(float Fy_PID, float Fy_PD) {  //Dit is voor de kleine motor
-  if (Fy_PID < 0) {                             // dit is voor wanneer de hovercraft links moet bewegen
-    float Fy = Fy_PD, Fy_PID;
-    digitalWrite(motorRechts, LOW);
-    analogWrite(motorRechtsPWM, 0.00519 * Fy * Fy - 0.67075 * Fy);
-  } else {  // dit is voor wanneer de hovercraft rechts moet bewegen
-    float Fy = Fy_PD, Fy_PID;
-    digitalWrite(motorRechts, HIGH);
-    analogWrite(motorRechtsPWM, 0.01060 * Fy * Fy + 1.12248 * Fy);
-  }
-}
 // Functie voor het instellen voor de Gyroscoop,
 void initGyroSensor() {
   //Check of de gyro is verbonden
@@ -293,8 +242,6 @@ void controlMotors(char command) {
       Serial.println("Fast forward...");
 
       // set the motor speed and direction
-      Regelaar_Iwan();
-      /*
       digitalWrite(motorLinks, HIGH);               // direction = forward
       analogWrite(motorLinksPWM, 255 - PWM_FAST);   // PWM speed = fast
       digitalWrite(motorRechts, HIGH);              // direction = forward
@@ -303,10 +250,9 @@ void controlMotors(char command) {
       digitalWrite(motorZijkant, HIGH);
       digitalWrite(motorZijkantIn1, LOW);
       digitalWrite(motorZijkantIn2, HIGH);
-      */
       break;
     case '2':  // Forward
-      /*
+
       Serial.println("Forward...");
       digitalWrite(motorLinks, LOW);
       digitalWrite(motorRechts, LOW);
@@ -323,12 +269,6 @@ void controlMotors(char command) {
       analogWrite(motorLinksPWM, 255 - PWM_SLOW);   // PWM speed = slow
       digitalWrite(motorRechts, LOW);               // direction = forward
       analogWrite(motorRechtsPWM, 255 - PWM_SLOW);  // PWM speed = slow
-      */
-      digitalWrite(NOODSTOPRELAY, HIGH);
-      delay(500);
-      digitalWrite(BLOWRELAY, HIGH);
-      delay(500);
-      Regelaar_Iwan();
       break;
     case '3':  // Soft stop (coast)
       Serial.println("Soft stop (coast)...");
@@ -526,51 +466,6 @@ void bootupCheck() {
   }
 }
 
-
-
-void Poolplaatsing_PD(float &Kp_PD, float &Kd_PD, float m, float Re_PD, float Im_PD) {
-  Kp_PD = (Re_PD * Re_PD + Im_PD * Im_PD) * m;
-  Kd_PD = 2 * Re_PD * m;
-}
-void Poolplaatsing_PID(float &Kp_PID, float &Kd_PID, float &Ki_PID, float Iz, float Re_PID, float Im_PID, float pool3) {
-  Kp_PID = (Re_PID * Re_PID + Im_PID * Im_PID + 2 * Re_PID * pool3) * Iz;
-  Kd_PID = (2 * Re_PID + pool3) * Iz;
-  Ki_PID = (Re_PID * Re_PID + Im_PID * Im_PID) * pool3 * Iz;
-}
-
-void Regeling_PD(float &Fx_PD, float &Fy_PD, float Kp_PD, float Kd_PD, float sp_PD, float sx, float dt) {
-  static float error_oud = 0;  // Initialize previous error
-  float error = sp_PD - sx;
-  float d_error = (error - error_oud) / dt;  // Calculate derivative of error
-  error_oud = error;                         // Update previous error
-  Fx_PD = Kp_PD * error + Kd_PD * d_error;
-  Fy_PD = Fx_PD;  // Assuming Fy should be the same as Fx for this example
-
-  Serial.print("Error: ");
-  Serial.println(error);
-  Serial.print("d_error: ");
-  Serial.println(d_error);
-  Serial.print("Fx: ");
-  Serial.println(Fx_PD);
-}
-void Regeling_PID(float &Fx_PID, float &Fy_PID, float Kp_PID, float Kd_PID, float Ki_PID, float sp_PID, float theta, float dt) {
-  static float error_oud = 0;  // Initialize previous error
-  float error = sp_PID - theta;
-  error_oud = error;
-  float d_error = error - error_oud;
-  float errorSom = errorSom + error * dt;
-  Fx_PID = Kp_PID * error + Kd_PID * d_error / dt + Ki_PID * errorSom;
-}
-void motoraansturing_Iwan(float Fx_PD, float Fx_PID, float Fy_PD, float Fy_PID) {
-  Motor_Rechts(Fx_PD, Fx_PID);
-  Motor_Links(Fx_PD, Fx_PID);
-  Motor_Midden(Fy_PD, Fy_PID);
-}
-void motoraansturing_Bram(float Fx_PID) {
-  Motor_Rechts(Fx_PID);
-  Motor_Links(Fx_PID);
-}
-
 void loop() {
   if (Serial.available()) {
     char command = Serial.read();
@@ -587,10 +482,10 @@ void loop() {
   communicatie();
   Regelaar_Iwan();
   //Regelaar_Bram();
-  Regelaar_Jari();
-  Regelaar_Jelle();
-  Regelaar_Teun();
-  Regelaar_Maurits();
+  //Regelaar_Jari();
+  //Regelaar_Jelle();
+  //Regelaar_Teun();
+  //Regelaar_Maurits();
   digitalWrite(NOODSTOPRELAY, HIGH);
   digitalWrite(BLOWRELAY, HIGH);
   lcd.clear();

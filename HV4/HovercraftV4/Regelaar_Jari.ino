@@ -5,7 +5,6 @@ void Motor_Links_Jari(float Mz);
 void Motor_Rechts_Jari(float Mz);
 
 void Regelaar_Jari(){
-  xyzFloat gAngle = myMPU9250.getAngles();
   const long cyclustijd = 10;  // Cyclustijd in ms
   static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
   long t_nw = millis();        // Get the current time in ms
@@ -13,7 +12,7 @@ void Regelaar_Jari(){
   const float Iz = 0.115405;  // In kilo gram
   float dt = 1;           // Nodig voor de d_error / dt
   float Mz;               // Initialize Fx and Fy
-  float theta = gAngle.z;    // Begin voor waarde van de regelaar in rad
+  float theta = roty;    // Begin voor waarde van de regelaar in rad
   float Kp, Kd, Ki;           // Paramateres voor de regelaar
   const float sp = 1.57;   // Setpoint voor het stoppen van de regelaar m
 

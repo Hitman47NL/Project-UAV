@@ -5,7 +5,7 @@
 #include <Adafruit_VL53L0X.h>
 #include <LiquidCrystal_I2C.h>
 #include <math.h>  // Include the math library for atan2 function
-#include <MPU9250_WE.h>
+#include <MPU6050.h>
 #include <SoftwareSerial.h>
 #include <avr/io.h>
 #include <avr/wdt.h>
@@ -15,9 +15,9 @@
 
 //Define pinnen voor Arduino
 //PWM
-#define BUZZER_PINP 7
-#define BUZZER_PIN 5
-#define BUZZER_PINM 6
+#define BUZZER_PINP 6
+#define BUZZER_PIN 7
+#define BUZZER_PINM 5
 #define motorLinksPWM 11  //  Motor B Input A
 #define motorLinks 10     //  Motor B Input B
 #define motorRechtsPWM 9  //  Motor A Input A
@@ -44,7 +44,6 @@
 #define TOF1_ADDR 0x30
 #define TOF2_ADDR 0x31
 #define TOF3_ADDR 0x32
-#define MPU9250_ADDR 0x68
 #define LCD_ADDR 0x27
 
 // RX and TX pins for SoftwareSerial
@@ -66,7 +65,11 @@ VL53L0X_RangingMeasurementData_t measure3;
 #define LCD_COLUMNS 16
 #define LCD_ROWS 2
 LiquidCrystal_I2C lcd(LCD_ADDR, LCD_COLUMNS, LCD_ROWS);
-MPU9250_WE myMPU9250 = MPU9250_WE(MPU9250_ADDR);
+
+//MPU6050 ints
+int16_t rotx, roty, rotz;
+//aanroepen MPU
+MPU6050_Base mpu;
 
 ACS712 stroommeter = ACS712(ACS712_30A, ACCU_SAFETY_PIN);
 //Global variable
@@ -87,6 +90,13 @@ float TOFsensor1M = 0.0;
 float TOFsensor2M = 0.0;
 float degAngle = 0.0;
 float radAngle = 0.0;
+
+bool Regelaar_Teun_Succes;
+bool Regelaar_Jelle_Succes;
+bool Regelaar_Bram_Succes;
+bool Regelaar_Iwan_Succes;
+bool Regelaar_Jari_Succes;
+bool Regelaar_Maurits_Succes;
 
 // Benodigde functies
 void Motor_Rechts(float Fx);
@@ -115,17 +125,6 @@ struct SensorData {
 
 // Definieer maximale grootte van buffer
 #define maxBufferSize 4096
-
-void setup() {
-  Serial.begin(115200);
-  
-  // Initialisatie van de SD-kaart
-  if (!SD.begin(chipSelect)) {
-    Serial.println("\nInitialisatie van de SD-kaart mislukt!");
-    return;
-  }
-  Serial.println("\nInitialisatie van de SD-kaart voltooid.");
-}
 
 void writeDataToFile(byte *buffer, unsigned bufferSize) {
   unsigned fileCounter = 0;
@@ -212,8 +211,13 @@ void setup() {
   initTOFsensors();  // Om de TOF sensoren te initialiseren
   initGyroSensor();  // Om de gyro te initialiseren
 
-  bootupCheck();
+  //bootupCheck();
   delay(100);
+  if (!SD.begin(chipSelect)) {
+    Serial.println("\nInitialisatie van de SD-kaart mislukt!");
+    return;
+  }
+  Serial.println("\nInitialisatie van de SD-kaart voltooid.");
 }
 
 // Functie voor het instellen van de adressen van de TOF sensoren. Code kan worden uitgebreid om acties te ondernemen bij het niet opstarten van de TOF senosren
@@ -260,33 +264,19 @@ void initTOFsensors() {
 
 // Functie voor het instellen voor de Gyroscoop,
 void initGyroSensor() {
+  mpu.CalibrateGyro();
+  Serial.print("Gyro aan het kaliberen niet bewegen!");
+  /*
   //Check of de gyro is verbonden
-  if (!myMPU9250.init()) {
+  if (!mpu.begin()) {
     Serial.println("MPU9250 does not respond");
     //Mogelijkheid tot uitbreiden voor niet werkende gyro
   } else {
     Serial.println("MPU9250 is connected");
   }
-  //Check of de magneetmeter werkt
-  if (!myMPU9250.initMagnetometer()) {
-    Serial.println("Magnetometer does not respond");
-    //Mogelijkheid tot uitbreiden voor niet werkende magneetmeter
-  } else {
-    Serial.println("Magnetometer is connected");
-  }
-
-  Serial.println("Position you MPU9250 flat and don't move it - calibrating...");
+  Serial.println("Position you MPU6050 flat and don't move it - calibrating...");
   delay(100);
-  myMPU9250.autoOffsets();
-  myMPU9250.enableGyrDLPF();
-  myMPU9250.setGyrDLPF(MPU9250_DLPF_6);
-  myMPU9250.setSampleRateDivider(5);
-  myMPU9250.setGyrRange(MPU9250_GYRO_RANGE_250);
-  myMPU9250.setAccRange(MPU9250_ACC_RANGE_2G);
-  myMPU9250.enableAccDLPF(true);
-  myMPU9250.setAccDLPF(MPU9250_DLPF_6);
-  myMPU9250.setMagOpMode(AK8963_CONT_MODE_100HZ);
-  delay(100);
+*/
 }
 //Deze functie zorgt voor het uitlezen van alle 3 TOF sensoren.
 void readDualSensors() {
@@ -440,53 +430,16 @@ void initWrites() {
   digitalWrite(motorRechts, LOW);
   digitalWrite(motorRechtsPWM, LOW);
 }
-//Functie voor waardes uit gyro the halen.
-void readGyro() {
-  xyzFloat gValue = myMPU9250.getGValues();
-  xyzFloat gyr = myMPU9250.getGyrValues();
-  xyzFloat magValue = myMPU9250.getMagValues();
-  xyzFloat gAngle = myMPU9250.getAngles();
-  float temp = myMPU9250.getTemperature();
-  float resultantG = myMPU9250.getResultantG(gValue);
-  return gAngle;
-}
 
 //Functie om data te printen in serial
 void dataPrinten() {
   //Voor gyroscoop
-  xyzFloat gValue = myMPU9250.getGValues();
-  xyzFloat gyr = myMPU9250.getGyrValues();
-  xyzFloat magValue = myMPU9250.getMagValues();
-  xyzFloat gAngle = myMPU9250.getAngles();
-  float temp = myMPU9250.getTemperature();
-  float resultantG = myMPU9250.getResultantG(gValue);
-  float orientation = myMPU9250.getOrientation();
-
-  Serial.println("Acceleration in g (x,y,z):");
-  Serial.print(gValue.x);
-  Serial.print("   ");
-  Serial.print(gValue.y);
-  Serial.print("   ");
-  Serial.println(gValue.z);
-  Serial.print("Resultant g: ");
-  Serial.println(resultantG);
-
-  Serial.println("Gyroscope data in degrees/s: ");
-  Serial.print(gyr.x);
-  Serial.print("   ");
-  Serial.print(gyr.y);
-  Serial.print("   ");
-  Serial.println(gyr.z);
-
-  Serial.println("Angle Data in degrees: ");
-  Serial.print(gAngle.x);
-  Serial.print("   ");
-  Serial.print(gAngle.y);
-  Serial.print("   ");
-  Serial.println(gAngle.z);
-
-  Serial.print("Orientatie: ");
-  Serial.println(orientation);
+  Serial.print("rotx: ");
+  Serial.println(rotx);
+  Serial.print("roty: ");
+  Serial.println(roty);
+  Serial.print("rotz: ");
+  Serial.println(rotz);
 }
 //Functie om de Arduino te resetten
 void softwareReset() {
@@ -500,17 +453,11 @@ void softwareReset() {
 //Functie om te controleren of alle sensoren goed zijn geinit
 void bootupCheck() {
   //Voor gyroscoop
-  xyzFloat gValue = myMPU9250.getGValues();
-  xyzFloat gyr = myMPU9250.getGyrValues();
-  xyzFloat magValue = myMPU9250.getMagValues();
-  xyzFloat gAngle = myMPU9250.getAngles();
-  float temp = myMPU9250.getTemperature();
-  float resultantG = myMPU9250.getResultantG(gValue);
-
+  mpu.getRotation(&rotx, &roty, &rotz);
   // Example error handling in reading accelerometer values
-  int vX = gValue.x;  // Check een X waarde
-  int gY = gyr.y;     // Check een Y waarde
-  int rZ = gAngle.z;  // Check een Z waarde
+  int vX = rotx;  // Check een X waarde
+  int gY = roty;     // Check een Y waarde
+  int rZ = rotz;  // Check een Z waarde
   bool successX = vX;
   bool succesY = gY;
   bool succesZ = rZ;
@@ -530,12 +477,9 @@ void bootupCheck() {
 }
 
 void loop() {
-  xyzFloat gValue = myMPU9250.getGValues();
-  float resultantG = myMPU9250.getResultantG(gValue);
-  xyzFloat gAngle = (myMPU9250.getAngles() * 180.0) / 3.14;
+  mpu.getRotation(&rotx, &roty, &rotz);
   checkBattery();
   batterij_control();
-  readGyro();
   dataPrinten();
   readDualSensors();
   //Regelaar_Iwan();
@@ -552,7 +496,7 @@ void loop() {
   lcd.setCursor(0, 1);
   lcd.print(TOFsensor2);
   lcd.setCursor(5, 1);
-  lcd.print(gAngle.z);
+  lcd.print(roty);
   calculateAngle();
   communicatie();
 }

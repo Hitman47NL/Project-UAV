@@ -1,4 +1,4 @@
-void Regeling_PD_Teun(float &Fy, float Kp, float Kd, float sp, float sx, float dt);
+void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt);
 void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im);
 void motoraansturing_Teun(float Fy);
 //void Motor_Rechts(float Fx);
@@ -13,7 +13,7 @@ void Regelaar_Teun() {
   const float Re = 0.6, Im = 1.2;
   const float m = 1.560;  // In kilo gram
   float dt = 1;           // Nodig voor de d_error / dt
-  float Fy;               // Initialize Fx and Fy
+  float Fx, Fy;               // Initialize Fx and Fy
   int sx = TOFsensor1;    // Begin voor waarde van de regelaar in m
   float Kp, Kd;           // Paramateres voor de regelaar
   const float sp = 200;   // Setpoint voor het stoppen van de regelaar m
@@ -31,8 +31,8 @@ void Regelaar_Teun() {
     dt = (t_nw - t_oud) * 0.001;    // Calculate dt in seconds
     t_oud = t_nw;                   // Update t_oud to the current time
 
-    Regeling_PD(Fy, Kp, Kd, sp, sx, dt);
-    Serial.print("PD Output Fy: ");
+    Regeling_PD(Fx, Fy, Kp, Kd, sp, sx, dt);
+    Serial.print("PD Output Fy Teun: ");
     Serial.println(Fy);
 
     motoraansturing_Teun(Fy / 2);  // Control the motors with half of Fx
@@ -44,14 +44,14 @@ void Regeling_PD_Teun(float &Fy, float Kp, float Kd, float sp, float sx, float d
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
   error_oud = error;                         // Update previous error
-  Fy = (Kp + 0.0) * error + (Kd - 0.0) * d_error;
+  Fy = (Kp + 0.0) * error + (Kd - 5.0) * d_error;
   //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
   Serial.print("Error: ");
   Serial.println(error);
   Serial.print("d_error: ");
   Serial.println(d_error);
-  Serial.print("Fx: ");
+  Serial.print("Fy Teun: ");
   Serial.println(Fy);
 }
 

@@ -1,4 +1,4 @@
-void Regeling_PD_Iwan(float &Fx, float Kp, float Kd, float sp, float sx, float dt);
+void Regeling_PD_Iwan(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt);
 void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im);
 void motoraansturing_Iwan(float Fx);
 
@@ -11,7 +11,7 @@ void Regelaar_Iwan() {
   const float Re = 0.628318531, Im = 1.256637061;
   const float m = 1.560;  // In kilo gram
   float dt = 1;           // Nodig voor de d_error / dt
-  float Fx;               // Initialize Fx and Fy
+  float Fx, Fy;               // Initialize Fx and Fy
   int sx = TOFsensor3;    // Begin voor waarde van de regelaar in m
   float Kp, Kd;           // Paramateres voor de regelaar
   const float sp = 300;   // Setpoint voor het stoppen van de regelaar m
@@ -29,26 +29,27 @@ void Regelaar_Iwan() {
     dt = (t_nw - t_oud) * 0.001;    // Calculate dt in seconds
     t_oud = t_nw;                   // Update t_oud to the current time
 
-    Regeling_PD(Fx, Kp, Kd, sp, sx, dt);
-    Serial.print("PD Output Fx: ");
+    Regeling_PD_Iwan(Fx, Fy, Kp, Kd, sp, sx, dt);
+    Serial.print("PD Output Fx Iwan: ");
     Serial.println(Fx);
     motoraansturing_Iwan(Fx / 2);  // Control the motors with half of Fx
   }
 }
 
-void Regeling_PD_Iwan(float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
+void Regeling_PD_Iwan(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
   static float error_oud = 0;  // Initialize previous error
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
   error_oud = error;                         // Update previous error
-  Fy = (Kp + 2.5) * error + (Kd - 0.5) * d_error;
+  Fx = (Kp + 2.5) * error + (Kd - 0.5) * d_error;
+  Fx = Fy;
   //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
   Serial.print("Error: ");
   Serial.println(error);
   Serial.print("d_error: ");
   Serial.println(d_error);
-  Serial.print("Fx: ");
+  Serial.print("Fx Iwan: ");
   Serial.println(Fy);
 }
 

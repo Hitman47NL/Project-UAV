@@ -49,7 +49,7 @@ const int RXPin = 19;
 const int TXPin = 18;
 SoftwareSerial mySerial(RXPin, TXPin);
 
-#define LOW_BATTERY_THRESHOLD 6.95 // threshold amperage
+#define LOW_BATTERY_THRESHOLD 6.95  // threshold amperage
 
 // Misc voor sensore en LCD
 Adafruit_VL53L0X tof1 = Adafruit_VL53L0X();
@@ -90,8 +90,8 @@ void Motor_Rechts(float Fx);
 void Motor_Links(float Fx);
 void Motor_midden(float Fy);
 
-void batterij_control(){
-    if (ACCU_SHUT_OFF == 1){
+void batterij_control() {
+  if (ACCU_SHUT_OFF == 1) {
     Emergency();
   }
 }
@@ -99,7 +99,7 @@ void batterij_control(){
 void Emergency() {
   digitalWrite(NOODSTOPRELAY, LOW);
   digitalWrite(BLOWRELAY, LOW);
-  while(1){
+  while (1) {
     Serial.println("PANIEK!!!");
   }
 }
@@ -120,21 +120,14 @@ void setup() {
   pinMode(ACCU_SHUT_OFF, INPUT);
   //attachInterrupt(digitalPinToInterrupt(ACCU_SHUT_OFF), Emergency, CHANGE);
   batterij_control();
-  setPins();       //Om de pinnen juist op in en output te zetten
-  initWrites();    // Om de motoren niet gelijk te laten draaien
+  setPins();     //Om de pinnen juist op in en output te zetten
+  initWrites();  // Om de motoren niet gelijk te laten draaien
   delay(100);
   initTOFsensors();  // Om de TOF sensoren te initialiseren
   initGyroSensor();  // Om de gyro te initialiseren
-  digitalWrite(motorZijkant, HIGH);
 
   bootupCheck();
   delay(100);
-  /*
-  digitalWrite(NOODSTOPRELAY, HIGH);
-  delay(500);
-  digitalWrite(BLOWRELAY, HIGH);
-  delay(100);
-  */
 }
 
 // Functie voor het instellen van de adressen van de TOF sensoren. Code kan worden uitgebreid om acties te ondernemen bij het niet opstarten van de TOF senosren
@@ -199,8 +192,6 @@ void initGyroSensor() {
   Serial.println("Position you MPU9250 flat and don't move it - calibrating...");
   delay(100);
   myMPU9250.autoOffsets();
-  myMPU9250.setAccOffsets(-14240.0, 18220.0, -17280.0, 15590.0, -20930.0, 12080.0);
-  myMPU9250.setGyrOffsets(45.0, 145.0, -105.0);
   myMPU9250.enableGyrDLPF();
   myMPU9250.setGyrDLPF(MPU9250_DLPF_6);
   myMPU9250.setSampleRateDivider(5);
@@ -257,20 +248,10 @@ void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im) {
   Kd = 2 * Re * m + 1.0;
 }
 
-void Regeling_PD(float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
-  static float error_oud = 0;  // Initialize previous error
-  float error = sp - sx;
-  float d_error = (error - error_oud) / dt;  // Calculate derivative of error
-  error_oud = error;                         // Update previous error
-  Fy = Kp * error + Kd * d_error;
-  //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
-
-  Serial.print("Error: ");
-  Serial.println(error);
-  Serial.print("d_error: ");
-  Serial.println(d_error);
-  Serial.print("Fx: ");
-  Serial.println(Fy);
+void Poolplaasting_PID(float &Kp, float &Kd, float &Ki, float Iz, float Re, float Im, float Pool3) {
+  Kp = (Re * Re + Im * Im + 2 * Re * Pool3) * Iz;
+  Kd = (2 * Re + Pool3) * Iz;
+  Ki = (Re * Re + Im * Im) * Pool3 * Iz;
 }
 
 // Aansturing van de motoren, graag niet aanpassen
@@ -307,12 +288,12 @@ void Motor_Rechts(float Fx) {  // Dit is voor Maxon motor 2
 void Motor_midden(float Fy) {  // For the small motor
   if (Fy < 0) {                // When hovercraft needs to move left
     Serial.print("PWM Midden links beweging ");
-    Serial.print(0.00519 * Fy * Fy - 0.67075 * Fy); 
+    Serial.println(0.01060 * Fy * Fy + 1.12248 * Fy);
     digitalWrite(motorZijkant, HIGH);
     analogWrite(motorZijkantPWM, 0.01060 * Fy * Fy + 1.12248 * Fy);
   } else {  // When hovercraft needs to move right
     Serial.print("PWM Midden rechts beweging ");
-    Serial.println(0.01060 * Fy * Fy + 1.12248 * Fy);
+    Serial.print(0.00519 * Fy * Fy - 0.67075 * Fy);
     digitalWrite(motorZijkant, LOW);
     analogWrite(motorZijkantPWM, 0.00519 * Fy * Fy - 0.67075 * Fy);
   }
@@ -381,6 +362,7 @@ void readGyro() {
   xyzFloat gAngle = myMPU9250.getAngles();
   float temp = myMPU9250.getTemperature();
   float resultantG = myMPU9250.getResultantG(gValue);
+  return gAngle;
 }
 
 //Functie om data te printen in serial
@@ -392,6 +374,7 @@ void dataPrinten() {
   xyzFloat gAngle = myMPU9250.getAngles();
   float temp = myMPU9250.getTemperature();
   float resultantG = myMPU9250.getResultantG(gValue);
+  float orientation = myMPU9250.getOrientation();
 
   Serial.println("Acceleration in g (x,y,z):");
   Serial.print(gValue.x);
@@ -415,6 +398,9 @@ void dataPrinten() {
   Serial.print(gAngle.y);
   Serial.print("   ");
   Serial.println(gAngle.z);
+
+  Serial.print("Orientatie: ");
+  Serial.println(orientation);
 }
 //Functie om de Arduino te resetten
 void softwareReset() {
@@ -458,26 +444,19 @@ void bootupCheck() {
 }
 
 void loop() {
-  /*
-  if (Serial.available()) {
-    char command = Serial.read();
-    controlMotors(command);
-  }
-  */
   xyzFloat gValue = myMPU9250.getGValues();
   float resultantG = myMPU9250.getResultantG(gValue);
-  xyzFloat gAngle = myMPU9250.getAngles() / (180.0 / 3.14);
+  xyzFloat gAngle = (myMPU9250.getAngles() * 180.0) / 3.14;
   checkBattery();
   batterij_control();
   readGyro();
   dataPrinten();
   readDualSensors();
-  communicatie();
   //Regelaar_Iwan();
   //Regelaar_Bram();
-  //Regelaar_Jari();
+  Regelaar_Jari();
   //Regelaar_Jelle();
-  Regelaar_Teun();
+  //Regelaar_Teun();
   //Regelaar_Maurits();
   digitalWrite(NOODSTOPRELAY, HIGH);
   digitalWrite(BLOWRELAY, LOW);

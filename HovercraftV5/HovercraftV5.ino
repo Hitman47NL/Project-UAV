@@ -68,7 +68,7 @@ MPU6050 mpu(Wire);
 ACS712 stroommeter = ACS712(ACS712_30A, ACCU_SAFETY_PIN);
 int receivedX = 0;  // Variable to store the received X coordinate
 int receivedY = 0;  // Variable to store the received Y coordinate
-
+  int consecutiveCount = 0;
 long timer = 0;
  float Kp, Kd, Ki;
  float errorSom = 0.0; // Initieer som van errors
@@ -310,41 +310,11 @@ float calculateAngle() {
 void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im) {
   Kp = (Re * Re + Im * Im) * m - 1.5;
   Kd = 2 * Re * m + 1.0;
-}/*
-void Regeling_PD(float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
-  static float error_oud = 0;  // Initialize previous error
-  float error = sp - sx;
-  float d_error = (error - error_oud) / dt;  // Calculate derivative of error
-  error_oud = error;                         // Update previous error
-  Fy = Kp * error + Kd * d_error;
-  //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
-
-  Serial.print("Error: ");
-  Serial.println(error);
-  Serial.print("d_error: ");
-  Serial.println(d_error);
-  Serial.print("Fx: ");
-  Serial.println(Fy);}*/
-//LETOP PID REGELAAR
+}
 void Poolplaatsing_PID(float &Kp, float &Kd, float&Ki, float m, float Re, float Im) {
   Kp = (Re * Re + Im * Im) * m - 1.5;
   Kd = 2 * Re * m + 1.0;
   Ki = 0;
-}
-void Regeling_PID(float &Mz, float Kp, float Kd, float Ki, float sp, float sx, float dt) {
-  static float error_oud = 0;  // Initialize previous error
-  float error = sp - sx;
-  float d_error = (error - error_oud) / dt;  // Calculate derivative of error
-  error_oud = error;                         // Update previous error
-  Mz = Kp * error + Kd * d_error + Ki * d_error;
-  //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
-
-  Serial.print("Error: ");
-  Serial.println(error);
-  Serial.print("d_error: ");
-  Serial.println(d_error);
-  Serial.print("Mz: ");
-  Serial.println(Mz);
 }
 
 // Aansturing van de motoren, graag niet aanpassen
@@ -416,7 +386,7 @@ void Regelaars(){
     lcd.print("Regelaar 2");
       Regelaar_Jelle();
       if(Regelaar_Jelle_Succes){
-        currentState = Bram;
+        currentState = Iwan;
       }
       break;
 
@@ -444,7 +414,7 @@ void Regelaars(){
             lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Regelaar 5");
-      //Regelaar_Jari();
+      Regelaar_Jari();
                   if(Regelaar_Jari_Succes){
         currentState = Maurits;
       }  
@@ -454,7 +424,11 @@ void Regelaars(){
                 lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Regelaar 6");
+    shutOFF();
+    digitalWrite(BLOWRELAY, LOW);
       //Regelaar_Maurits();
+      delay(500);
+      softwareReset();
       break;
 
     default:
@@ -492,6 +466,7 @@ void loop() {
     Serial.print(F("ANGLE"));    Serial.print("\tZ: ");Serial.println(mpu.getAngleZ());
     Serial.println(F("=====================================================\n"));
     //checkBattery();
+    digitalWrite(BLOWRELAY, HIGH);
     readDualSensors();
     calculateAngle();
     lcd.setCursor(0, 0);

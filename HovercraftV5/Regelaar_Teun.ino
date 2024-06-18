@@ -1,5 +1,5 @@
 void Regeling_PD(float &Fy, float Kp, float Kd, float sp, float sx, float dt);
-void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im);
+void Poolplaatsing_PD_Teun(float &Kp, float &Kd, float m, float Re, float Im);
 void motoraansturing_Teun(float Fy);
 //void Motor_Rechts(float Fx);
 //void Motor_Links(float Fx);
@@ -22,7 +22,7 @@ void waitForSensorValue1() {
             consecutiveCount = 0;
         }
 
-        if (consecutiveCount >= 10) { // Check for the required duration
+        if (consecutiveCount >= 6) { // Check for the required duration
         Regelaar_Teun_Succes = true;
         consecutiveCount = 0;
 }}
@@ -53,7 +53,7 @@ void Regelaar_Teun() {
     dt = (t_nw - t_oud) * 0.001;    // Calculate dt in seconds
     t_oud = t_nw;                   // Update t_oud to the current time
 
-    Regeling_PD(Fy, Kp, Kd, sp, sx, dt);
+    Regeling_PD_Teun(Fy, Kp, Kd, sp, sx, dt);
     Serial.print("PD Output Fy Teun: ");
     Serial.println(Fy);
     lcd.setCursor(1, 1);
@@ -62,12 +62,12 @@ void Regelaar_Teun() {
     waitForSensorValue1();
   }
 }
-void Regeling_PD(float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
+void Regeling_PD_Teun(float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
   static float error_oud = 0;  // Initialize previous error
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
   error_oud = error;                         // Update previous error
-  Fy = (Kp + 0.0) * error + (Kd - 5.0) * d_error;
+  Fy = (Kp + 2.0) * error + (Kd + 1.0) * d_error;
   //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
   Serial.print("Error: ");

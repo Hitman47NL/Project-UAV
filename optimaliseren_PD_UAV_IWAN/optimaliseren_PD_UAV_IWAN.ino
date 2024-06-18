@@ -166,7 +166,7 @@ void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, f
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
   error_oud = error;  // Update previous error
-  Fx = Kp * error + Kd * d_error;
+  Fx = (Kp + 1.5) * error + (Kd - 0.5) * d_error;
   Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
   Serial.print("Error: ");

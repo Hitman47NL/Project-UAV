@@ -5,7 +5,6 @@ void Poolplaatsing_PID_Jelle(float &Kp, float &Kd, float &Ki, float Iz, float Re
 void Motoraansturing_Jelle(float Mz);
 void Motor_Links_Jelle(float Mz);
 void Motor_Rechts_Jelle(float Mz);
-    int consecutiveCount = 0;
 void waitForSensorValue2() {
   readDualSensors();
     unsigned long startTime = millis();

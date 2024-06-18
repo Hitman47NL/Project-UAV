@@ -4,6 +4,28 @@ void Motoraansturing_Bram(float Mz);
 void Motor_Links_Bram(float Mz);
 void Motor_Rechts_Bram(float Mz);
 
+void waitForSensorValue3() {
+  int consecutiveCount = 0;
+    unsigned long startTime = millis();
+    unsigned long endTime = startTime + 1000 * 1000; // Convert seconds to milliseconds
+
+        float theta = mpu.getAccZ();  // Replace with actual sensor reading function
+                        lcd.setCursor(12, 1);
+            lcd.print(theta);
+            
+        if (theta > -10 && theta < 10) {
+            consecutiveCount++;
+            lcd.setCursor(8, 1);
+            lcd.print(consecutiveCount);
+
+        } else {
+            consecutiveCount = 0;
+        }
+
+        if (consecutiveCount >= 10) { // Check for the required duration
+        Regelaar_Bram_Succes = true;
+        consecutiveCount = 0;
+}}
 void Regelaar_Bram() {
   const long cyclustijd = 10;  // Cyclustijd in ms
   static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
@@ -19,7 +41,7 @@ void Regelaar_Bram() {
   Serial.print("theta: ");
   Serial.println(theta);
 
-  float Kp, Kd, Ki; // Declare PID constants
+  float Kp = 1.0, Kd = 0.1, Ki = 0.05; // Declare PID constants
   //Poolplaatsing_PID_Bram(Kp, Kd, Ki, Iz, Re, Im, pool3); // Initialize PID constants
   Serial.print("Kp: ");
   Serial.println(Kp);
@@ -38,6 +60,7 @@ void Regelaar_Bram() {
     Serial.print("PID_Bram: ");
     Serial.print(Mz);
     Motoraansturing_Bram(Mz / 2);  // Control the motors with half of Mz
+    waitForSensorValue3();
   }
 }
 
@@ -64,7 +87,7 @@ void Motoraansturing_Bram(float Mz){
 }
 
 void Motor_Links_Bram(float Mz) {  // Dit is voor Maxon motor 1
-  if (Mz > 0) {
+  if (Mz < 0) {
     Serial.print("PWM Maxon 1 pos: ");
     Serial.println(-0.00298 * Mz * Mz - 1.75115 * Mz);
     digitalWrite(motorRechts, LOW);
@@ -78,7 +101,7 @@ void Motor_Links_Bram(float Mz) {  // Dit is voor Maxon motor 1
 }
 
 void Motor_Rechts_Bram(float Mz) {  // Dit is voor Maxon motor 2
-  if (Mz < 0) {
+  if (Mz > 0) {
     Serial.print("PWM Maxon 2 pos: ");
     Serial.println(-0.00282 * Mz * Mz - 1.70725 * Mz);
     digitalWrite(motorLinks, LOW);

@@ -1,8 +1,31 @@
-/*void Regeling_PID_Jari(float &Mz, float Kp, float Kd, float Ki, float sp, float theta, float dt);
+void Regeling_PID_Jari(float &Mz, float Kp, float Kd, float Ki, float sp, float theta, float dt);
 void Motoraansturing_Jari(float Mz);
 void Motor_Links_Jari(float Mz);
 void Motor_Rechts_Jari(float Mz);
 //void Poolplaasting_PID_Jari(float &Kp, float &Kd, float &Ki, float Iz, float Re, float Im, float Pool3);
+void waitForSensorValue5() {
+  int consecutiveCount = 0;
+    unsigned long startTime = millis();
+    unsigned long endTime = startTime + 1000 * 1000; // Convert seconds to milliseconds
+
+        float theta = (mpu.getAngleZ() / 180);  // Replace with actual sensor reading function
+            lcd.setCursor(12, 1);
+            lcd.print(theta);
+            
+       if (theta < -0.3) {
+                Regelaar_Jari_Succes = true;
+            consecutiveCount++;
+            lcd.setCursor(8, 1);
+            lcd.print(consecutiveCount);
+
+        } else {
+            consecutiveCount = 0;
+        }
+
+        if (consecutiveCount >= 6) { // Check for the required duration
+        Regelaar_Jari_Succes = true;
+        consecutiveCount = 0;
+}}
 void Regelaar_Jari(){
   const long cyclustijd = 10;  // Cyclustijd in ms
   static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
@@ -11,14 +34,14 @@ void Regelaar_Jari(){
   const float Iz = 0.115405;  // In kilo gram
   float dt = 1;           // Nodig voor de d_error / dt
   float Mz;               // Initialize Fx and Fy
-  float theta = mpu.getAngleZ();    // Begin voor waarde van de regelaar in rad
+  float theta = (mpu.getAngleZ() / 180);    // Begin voor waarde van de regelaar in rad
   float Kp, Kd, Ki;           // Paramateres voor de regelaar
-  const float sp = 1.57;   // Setpoint voor het stoppen van de regelaar m
+  const float sp = -0.5;   // Setpoint voor het stoppen van de regelaar m
 
   Serial.print("Gyro (theta): ");
   Serial.println(theta);
 
-  Poolplaasting_PID_Jari(Kp, Kd, Ki, Iz, Re, Im, Pool3);
+  Poolplaatsing_PID(Kp, Kd, Ki, Iz, Re, Im, Pool3);
   Serial.print("Kp: ");
   Serial.println(Kp);
   Serial.print("Kd: ");
@@ -34,6 +57,7 @@ void Regelaar_Jari(){
     Serial.print("PD Output Mz Jari: ");
     Serial.println(Mz);
     Motoraansturing_Jari(Mz / 2);  // Control the motors with half of Fx
+    waitForSensorValue5();
   }
 }
 
@@ -86,4 +110,4 @@ void Motor_Rechts_Jari(float Mz) {  // Dit is voor Maxon motor 2
     digitalWrite(motorLinks, HIGH);
     analogWrite(motorLinksPWM, -0.00425 * Mz * Mz + 2.077594 * Mz);
   }
-}*/
+}

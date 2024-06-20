@@ -1,10 +1,10 @@
+void Poolplaatsing_PD_Iwan(float &Kp, float &Kd, float m, float Re, float Im);
 void Regeling_PD_Iwan(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt);
-//void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im);
 void motoraansturing_Iwan(float Fx);
 void Motor_Links_Iwan(float Fx);
 void Motor_Rechts_Iwan(float Fx);
 
-
+/*
 void waitForSensorValue4() {
   
     unsigned long startTime = millis();
@@ -27,9 +27,10 @@ void waitForSensorValue4() {
         Regelaar_Iwan_Succes = true;
         consecutiveCount = 0;
 }}
+*/
 void Regelaar_Iwan() {
   readDualSensors();
-  waitForSensorValue4();
+  //waitForSensorValue4();
   const long cyclustijd = 10;  // Cyclustijd in ms
   static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
   long t_nw = millis();        // Get the current time in ms
@@ -71,16 +72,13 @@ void Regeling_PD_Iwan(float &Fx, float &Fy, float Kp, float Kd, float sp, float 
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
   error_oud = error;                         // Update previous error
-  Fx = (Kp + 1.5) * error + (Kd - 0.5) * d_error;
+  Fx = (Kp - 1.5) * error + (Kd + 0.5) * d_error;
   Fx = Fy;
-  //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
   Serial.print("Error: ");
-  Serial.println(error);
-  Serial.print("d_error: ");
-  Serial.println(d_error);
+  Serial.println(error, 4);
   Serial.print("Fx Iwan: ");
-  Serial.println(Fy);
+  Serial.println(Fx, 4);
 }
 
 void Motor_Links_Iwan(float Fx) {  // Dit is voor Maxon motor 1
@@ -89,12 +87,12 @@ void Motor_Links_Iwan(float Fx) {  // Dit is voor Maxon motor 1
     float Fx_nega = Fx * -1;
     Serial.println(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
     digitalWrite(motorRechts, LOW); // dit is voor wanneer de hovercraft achterwaarts moet bewegen
-    analogWrite(motorRechtsPWM, -0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
+    analogWrite(motorRechtsPWM, constrain(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega, -255, -50));
   } else {  // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
     Serial.print("PWM Maxon 1 nega: ");             
     Serial.println(-0.00505 * Fx * Fx + 2.25550 * Fx);
     digitalWrite(motorRechts, HIGH);
-    analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
+    analogWrite(motorRechtsPWM, constrain(-0.00505 * Fx * Fx + 2.25550 * Fx, 50, 255) );
   }
 }
 
@@ -104,12 +102,12 @@ void Motor_Rechts_Iwan(float Fx) {  // Dit is voor Maxon motor 2
     float Fx_nega = Fx * -1;             
     Serial.println(-0.00282 * Fx * Fx - 1.70725 * Fx);
     digitalWrite(motorLinks, LOW);
-    analogWrite(motorLinksPWM, -0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega);
+    analogWrite(motorLinksPWM, constrain(-0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega, -255, -50));
   } else {  // dit is voor wanneer de hovercraft voorwaarts moet bewegen
     Serial.print("PWM Maxon 2 nega: ");             
     Serial.println(-0.00425 * Fx * Fx + 2.077594 * Fx);
     digitalWrite(motorLinks, HIGH);
-    analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
+    analogWrite(motorLinksPWM, constrain(-0.00425 * Fx * Fx + 2.077594 * Fx, 50, 255));
   }
 }
 

@@ -25,9 +25,9 @@
 #define TOF3_ADDR 0x32
 
 // INT van de sensoren
-float TOFsensor1;
-float TOFsensor2;
-float TOFsensor3;
+int TOFsensor1;
+int TOFsensor2;
+int TOFsensor3;
 float TOFsensor1M;
 float TOFsensor2M;
 float degAngle;
@@ -120,16 +120,16 @@ void Regelaar_Iwan() {
   const long cyclustijd = 10;  // Cyclustijd in ms
   static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
   long t_nw = millis();        // Get the current time in ms
-  const float Re = 0.75, Im = 1.0;
-  const float m = 1560;       // In kilo gram
+  const float Re = 0.628318531/2, Im = 1.256637061/2;
+  const float m = 1.560;       // In kilo gram
   float dt = 1;                // Nodig voor de d_error / dt
   float Fx, Fy;        // Initialize Fx and Fy
-  float sx = TOFsensor3/1000;       // Begin voor waarde van de regelaar in m
+  int sx = TOFsensor3;       // Begin voor waarde van de regelaar in m
   float Kp, Kd;                // Paramateres voor de regelaar
-  const float sp = 0.3;        // Setpoint voor het stoppen van de regelaar m
+  const float sp = 325;        // Setpoint voor het stoppen van de regelaar m
 
   Serial.print("TOFsensor3 (sx): ");
-  Serial.println(sx, 4);
+  Serial.println(sx);
 
   Poolplaatsing_PD(Kp, Kd, m, Re, Im);
   Serial.print("Kp: ");
@@ -157,8 +157,8 @@ void motoraansturing_Iwan(float Fx) {
 }
 
 void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im) {
-  Kp = (Re * Re + Im * Im) * m;
-  Kd = 2 * Re * m;
+  Kp = ((Re * Re + Im * Im) * m) + 0.01;
+  Kd = (2 * Re * m) + 0.0;
 }
 
 void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
@@ -166,7 +166,7 @@ void Regeling_PD(float &Fx, float &Fy, float Kp, float Kd, float sp, float sx, f
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
   error_oud = error;  // Update previous error
-  Fx = (Kp + 1.5) * error + (Kd - 0.5) * d_error;
+  Fx = Kp * error + Kd * d_error;
   Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
   Serial.print("Error: ");
@@ -183,12 +183,12 @@ void Motor_Links(float Fx) {  // Dit is voor Maxon motor 1
     float Fx_nega = Fx * -1;
     Serial.println(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
     digitalWrite(motorRechts, LOW); // dit is voor wanneer de hovercraft achterwaarts moet bewegen
-    analogWrite(motorRechtsPWM, -0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
+    analogWrite(motorRechtsPWM, constrain(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega, -255, -50));
   } else {  // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
     Serial.print("PWM Maxon 1 nega: ");             
     Serial.println(-0.00505 * Fx * Fx + 2.25550 * Fx);
     digitalWrite(motorRechts, HIGH);
-    analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
+    analogWrite(motorRechtsPWM, constrain(-0.00505 * Fx * Fx + 2.25550 * Fx, 50, 255) );
   }
 }
 
@@ -198,12 +198,12 @@ void Motor_Rechts(float Fx) {  // Dit is voor Maxon motor 2
     float Fx_nega = Fx * -1;             
     Serial.println(-0.00282 * Fx * Fx - 1.70725 * Fx);
     digitalWrite(motorLinks, LOW);
-    analogWrite(motorLinksPWM, -0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega);
+    analogWrite(motorLinksPWM, constrain(-0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega, -255, -50));
   } else {  // dit is voor wanneer de hovercraft voorwaarts moet bewegen
     Serial.print("PWM Maxon 2 nega: ");             
     Serial.println(-0.00425 * Fx * Fx + 2.077594 * Fx);
     digitalWrite(motorLinks, HIGH);
-    analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
+    analogWrite(motorLinksPWM, constrain(-0.00425 * Fx * Fx + 2.077594 * Fx, 50, 255));
   }
 }
 

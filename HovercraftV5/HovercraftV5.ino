@@ -306,45 +306,35 @@ float calculateAngle() {
     return -radAngle;           //Geeft de negatieve hoek in graden terug om te gebruiken voor de regelaar
   }
 }
-//LET OP PD REGELAAR
-void Poolplaatsing_PD(float &Kp, float &Kd, float m, float Re, float Im) {
-  Kp = (Re * Re + Im * Im) * m - 1.5;
-  Kd = 2 * Re * m + 1.0;
-}
-void Poolplaatsing_PID(float &Kp, float &Kd, float&Ki, float m, float Re, float Im) {
-  Kp = (Re * Re + Im * Im) * m - 1.5;
-  Kd = 2 * Re * m + 1.0;
-  Ki = 0;
-}
 
 // Aansturing van de motoren, graag niet aanpassen
 void Motor_Links(float Fx) {  // Dit is voor Maxon motor 1
-  if (Fx > 0) {               // hierdoor gaat de uav achteruit
-    Serial.print("PWM Maxon 1 pos: ");
-    //float Fx_nega = Fx * -1;
-    Serial.println(-0.00298 * Fx * Fx - 1.75115 * Fx);
-    digitalWrite(motorRechts, LOW);  // dit is voor wanneer de hovercraft achterwaarts moet bewegen
-    analogWrite(motorRechtsPWM, -0.00298 * Fx * Fx - 1.75115 * Fx);
+  if (Fx > 0) {   // hierdoor gaat de uav achteruit
+    Serial.print("PWM Maxon 1 pos: ");             
+    float Fx_nega = Fx * -1;
+    Serial.println(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega);
+    digitalWrite(motorRechts, LOW); // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+    analogWrite(motorRechtsPWM, constrain(-0.00298 * Fx_nega * Fx_nega - 1.75115 * Fx_nega, -255, -50));
   } else {  // dit is voor wanneer de hovercraft voorwaartswaarts moet bewegen
-    Serial.print("PWM Maxon 1 nega: ");
+    Serial.print("PWM Maxon 1 nega: ");             
     Serial.println(-0.00505 * Fx * Fx + 2.25550 * Fx);
     digitalWrite(motorRechts, HIGH);
-    analogWrite(motorRechtsPWM, -0.00505 * Fx * Fx + 2.25550 * Fx);
+    analogWrite(motorRechtsPWM, constrain(-0.00505 * Fx * Fx + 2.25550 * Fx, 50, 255) );
   }
 }
 
 void Motor_Rechts(float Fx) {  // Dit is voor Maxon motor 2
-  if (Fx > 0) {                // dit is voor wanneer de hovercraft achterwaarts moet bewegen
+  if (Fx > 0) {               // dit is voor wanneer de hovercraft achterwaarts moet bewegen
     Serial.print("PWM Maxon 2 pos: ");
-    //float Fx_nega = Fx * -1;
+    float Fx_nega = Fx * -1;             
     Serial.println(-0.00282 * Fx * Fx - 1.70725 * Fx);
     digitalWrite(motorLinks, LOW);
-    analogWrite(motorLinksPWM, -0.00282 * Fx * Fx - 1.70725 * Fx);
+    analogWrite(motorLinksPWM, constrain(-0.00282 * Fx_nega * Fx_nega - 1.70725 * Fx_nega, -255, -50));
   } else {  // dit is voor wanneer de hovercraft voorwaarts moet bewegen
-    Serial.print("PWM Maxon 2 nega: ");
+    Serial.print("PWM Maxon 2 nega: ");             
     Serial.println(-0.00425 * Fx * Fx + 2.077594 * Fx);
     digitalWrite(motorLinks, HIGH);
-    analogWrite(motorLinksPWM, -0.00425 * Fx * Fx + 2.077594 * Fx);
+    analogWrite(motorLinksPWM, constrain(-0.00425 * Fx * Fx + 2.077594 * Fx, 50, 255));
   }
 }
 
@@ -353,12 +343,12 @@ void Motor_midden(float Fy) {  // For the small motor
     Serial.print("PWM Midden links beweging ");
     Serial.print(0.00519 * Fy * Fy - 0.67075 * Fy); 
     digitalWrite(motorZijkant, HIGH);
-    analogWrite(motorZijkantPWM, 0.01060 * Fy * Fy + 1.12248 * Fy);
+    analogWrite(motorZijkantPWM, constrain(0.01060 * Fy * Fy + 1.12248 * Fy, -255, -100));
   } else {  // When hovercraft needs to move right
     Serial.print("PWM Midden rechts beweging ");
     Serial.println(0.01060 * Fy * Fy + 1.12248 * Fy);
     digitalWrite(motorZijkant, LOW);
-    analogWrite(motorZijkantPWM, 0.00519 * Fy * Fy - 0.67075 * Fy);
+    analogWrite(motorZijkantPWM, constrain(0.00519 * Fy * Fy - 0.67075 * Fy, 100, 255));
   }
 }
 // Controller states
@@ -477,5 +467,6 @@ void loop() {
     lcd.print(mpu.getAngleZ());
     attachInterrupt(digitalPinToInterrupt(ACCU_SHUT_OFF), shutOFF, LOW);
     attachInterrupt(ACCU_SAFETY_PIN, shutOFF, LOW);
-    Regelaars();
+    //Regelaars();
+    Regelaar_Teun();
 }

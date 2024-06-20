@@ -1,4 +1,4 @@
-void Regeling_PD(float &Fy, float Kp, float Kd, float sp, float sx, float dt);
+void Regeling_PD_Teun(float &Fy, float Kp, float Kd, float sp, float sx, float dt);
 void Poolplaatsing_PD_Teun(float &Kp, float &Kd, float m, float Re, float Im);
 void motoraansturing_Teun(float Fy);
 //void Motor_Rechts(float Fx);
@@ -32,18 +32,18 @@ void Regelaar_Teun() {
   const long cyclustijd = 10;  // Cyclustijd in ms
   static long t_oud = 0;       // Initialize t_oud to 0 at the beginning
   long t_nw = millis();        // Get the current time in ms
-  const float Re = 0.6, Im = 1.2;
-  const float m = 1.560;  // In kilo gram
+  const float Re = 0.6/4, Im = 1.2/4;
+  const float m = 1560;  // In kilo gram
   float dt = 1;           // Nodig voor de d_error / dt
   float Fx, Fy;               // Initialize Fx and Fy
   int sx = TOFsensor1;    // Begin voor waarde van de regelaar in m
   float Kp, Kd;           // Paramateres voor de regelaar
-  const float sp = 200;   // Setpoint voor het stoppen van de regelaar m
+  const float sp = 205;   // Setpoint voor het stoppen van de regelaar m
 
   Serial.print("TOFsensor1 (sx): ");
   Serial.println(sx);
 
-  Poolplaatsing_PD(Kp, Kd, m, Re, Im);
+  Poolplaatsing_PD_Teun(Kp, Kd, m, Re, Im);
   Serial.print("Kp: ");
   Serial.println(Kp);
   Serial.print("Kd: ");
@@ -62,12 +62,18 @@ void Regelaar_Teun() {
     waitForSensorValue1();
   }
 }
+
+void Poolplaatsing_PD_Teun(float &Kp, float &Kd, float m, float Re, float Im) {
+  Kp = ((Re * Re + Im * Im) * m) + 0.0;
+  Kd = (2 * Re * m) + 0.0;
+}
+
 void Regeling_PD_Teun(float &Fy, float Kp, float Kd, float sp, float sx, float dt) {
   static float error_oud = 0;  // Initialize previous error
   float error = sp - sx;
   float d_error = (error - error_oud) / dt;  // Calculate derivative of error
   error_oud = error;                         // Update previous error
-  Fy = (Kp + 2.0) * error + (Kd + 1.0) * d_error;
+  Fy = Kp * error + Kd * d_error;
   //Fy = Fx;  // Assuming Fy should be the same as Fx for this example
 
   Serial.print("Error: ");

@@ -1,5 +1,5 @@
 void Regeling_PID_Bram(float &Mz, float Kp, float Kd, float Ki, float sp, float theta, float dt);
-//void Poolplaatsing_PID_Bram(float &Kp, float &Kd, float &Ki, float Iz, float Re, float Im, float Pool3);
+void Poolplaatsing_PID_Bram(float &Kp, float &Kd, float &Ki, float Iz, float Re, float Im, float Pool3);
 void Motoraansturing_Bram(float Mz);
 void Motor_Links_Bram(float Mz);
 void Motor_Rechts_Bram(float Mz);

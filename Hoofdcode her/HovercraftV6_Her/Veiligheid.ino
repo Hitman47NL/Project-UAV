@@ -4,6 +4,15 @@ void softwareReset() {
   while (1) {}  // Wait for watchdog timer to trigger reset
 }
 
+void shutOFF(){
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("ERROR!");
+    playFailTune();
+    digitalWrite(NOODSTOPRELAY, LOW);
+    digitalWrite(BLOWRELAY, LOW);
+}
+
 void checkBattery() {
   Serial.println("Battery raw: " + String(aDC));
   Serial.println("Voltage: " + String(voltage));

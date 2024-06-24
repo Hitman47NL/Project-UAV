@@ -92,3 +92,21 @@ void readDualSensors() {
   TOFsensor3 = measure3.RangeMilliMeter;  //Sensor 3 afstand in mm
 }
 
+void bootupCheck() {
+  bool successX = mpu.getAccAngleX();
+  bool succesY = mpu.getAngleZ(); 
+   if (!successX && !succesY) {  // Check of ze allemaal niet zijn opgestart dan reboot
+    playFailTune();
+    Serial.println("Error reading GYRO values!");
+    lcd.setCursor(0, 1);
+    lcd.print("ERROR REBOOT");
+    delay(500);
+    softwareReset();
+  } else {  // Bij goed opstarten wordt er een geluid afgespeeld
+    playSuccessTune();
+    lcd.setCursor(5, 1);
+    lcd.print("Lets fly");
+    delay(500);
+  }
+}
+

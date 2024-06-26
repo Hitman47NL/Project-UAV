@@ -178,7 +178,7 @@ void loop() {
   Serial.print("\tZ: ");
   Serial.println(mpu.getAngleZ());
   Serial.println(F("=====================================================\n"));
-  //checkBattery();
+  checkBattery();
   digitalWrite(BLOWRELAY, HIGH);
   readDualSensors();
   calculateAngle();
@@ -190,6 +190,5 @@ void loop() {
   lcd.print(mpu.getAngleZ());
   attachInterrupt(digitalPinToInterrupt(ACCU_SHUT_OFF), shutOFF, LOW);
   attachInterrupt(ACCU_SAFETY_PIN, shutOFF, LOW);
-
   Regelaars();
 }
